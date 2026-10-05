@@ -2,6 +2,9 @@ import { addJournal, addPetEvent, gainRewards, saveState } from './state.js';
 import { getCoat, getPersonality } from './cats.js';
 
 const W = 1280, H = 720;
+const WORLD_W = 3600, WORLD_H = 2400;
+const SCENE_OX = 1140, SCENE_OY = 770;
+const CAMERA_AHEAD_Y = 55;
 const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
 const dist = (a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
@@ -20,6 +23,7 @@ export class TownGame {
     this.catImages.hu.src = '/assets/hu.png';
     this.lastPetBrain = 0;
     this.lastSave = 0;
+    this.camera = { x: 0, y: 0 };
     this.resize();
     window.addEventListener('resize', () => this.resize());
 
@@ -64,7 +68,7 @@ export class TownGame {
   bindPointer(){
     const getWorld = e => {
       const r = this.canvas.getBoundingClientRect();
-      return {x:(e.clientX-r.left)/r.width*W, y:(e.clientY-r.top)/r.height*H};
+      return {x:(e.clientX-r.left)/r.width*W + this.camera.x, y:(e.clientY-r.top)/r.height*H + this.camera.y};
     };
     this.canvas.addEventListener('pointerdown', e=>{
       const p=getWorld(e);
@@ -91,17 +95,23 @@ export class TownGame {
     if(this.keys.has('KeyD') || this.keys.has('d') || this.keys.has('ArrowRight') || this.keys.has('arrowright')) x+=1;
     if(!x&&!y){x=this.joy.x;y=this.joy.y;}
     const len=Math.hypot(x,y)||1;
-    p.x=clamp(p.x+x/len*130*dt,90,W-90);
-    p.y=clamp(p.y+y/len*130*dt,150,H-150);
+    p.x=clamp(p.x+x/len*130*dt,90,WORLD_W-90);
+    p.y=clamp(p.y+y/len*130*dt,150,WORLD_H-150);
 
     // Partner wanders in a small ring around the plaza.
     const q=this.state.partner;
     const a=this.time/5000;
-    q.x=755+Math.cos(a)*100; q.y=430+Math.sin(a*1.35)*70;
+    q.x=SCENE_OX + 755 + Math.cos(a)*100; q.y=SCENE_OY + 430 + Math.sin(a*1.35)*70;
 
     // Pet brain: cats choose between wandering and approaching either person.
     if(this.time-this.lastPetBrain>2300){ this.lastPetBrain=this.time; this.decideCat(); }
     for(const cat of Object.values(this.state.cats)) this.updateCat(cat,dt);
+
+    const targetCamX = clamp(p.x - W/2, 0, WORLD_W-W);
+    const targetCamY = clamp(p.y - H/2 - CAMERA_AHEAD_Y, 0, WORLD_H-H);
+    const camEase = 1 - Math.exp(-dt*7);
+    this.camera.x += (targetCamX - this.camera.x) * camEase;
+    this.camera.y += (targetCamY - this.camera.y) * camEase;
 
     if(this.time-this.lastSave>3000){ this.lastSave=this.time; saveState(this.state); }
   }
@@ -138,7 +148,7 @@ export class TownGame {
       cat.x+=Math.cos(this.time/1700+cat.id.length)*speed*0.35*dt;
       cat.y+=Math.sin(this.time/2100+cat.id.length*2)*speed*0.35*dt;
     }
-    cat.x=clamp(cat.x,100,W-100); cat.y=clamp(cat.y,190,H-150);
+    cat.x=clamp(cat.x,100,WORLD_W-100); cat.y=clamp(cat.y,190,WORLD_H-150);
     cat.hunger=clamp(cat.hunger+dt*0.25,0,100);
     cat.energy=clamp(cat.energy+(cat.state==='sleep'?dt*2:-dt*0.15),10,100);
   }
@@ -170,39 +180,54 @@ export class TownGame {
 
   draw(){
     const c=this.ctx; c.setTransform(this.scaleX,0,0,this.scaleY,0,0); c.clearRect(0,0,W,H);
+    c.save();
+    c.translate(-this.camera.x, -this.camera.y);
     this.drawWorld(c);
     this.drawCharacter(c,this.state.partner,true);
     this.drawCharacter(c,this.state.player,false);
     for(const cat of Object.values(this.state.cats)) this.drawCat(c,cat);
+    c.restore();
   }
 
   drawWorld(c){
-    c.fillStyle='#bcd4bd'; c.fillRect(0,0,W,H);
-    // layered grass tiles
-    for(let y=140;y<H;y+=40) for(let x=0;x<W;x+=40){ c.fillStyle=((x/40+y/40)%2?'#b8d0b7':'#c2d9bf'); c.fillRect(x,y,40,40); }
-    // river
-    c.fillStyle='#96c4c2'; c.fillRect(0,150,W,70); c.fillStyle='#a8d2cf'; for(let x=0;x<W;x+=36) c.fillRect(x,180,22,3);
-    // main plaza
+    // The world is deliberately larger than the viewport. Only the camera
+    // window around the players is visible, like a 2D RPG exploration scene.
+    c.fillStyle='#b8d1b7'; c.fillRect(0,0,WORLD_W,WORLD_H);
+    for(let y=0;y<WORLD_H;y+=40) for(let x=0;x<WORLD_W;x+=40){
+      c.fillStyle=((x/40+y/40)%2?'#b6ceb5':'#c1d7be'); c.fillRect(x,y,40,40);
+    }
+
+    // distant districts outside the central plaza
+    c.fillStyle='#92bcb7'; c.fillRect(0,330,820,WORLD_H-660);
+    c.fillStyle='#a6c6ae'; c.fillRect(2780,180,WORLD_W-2780,WORLD_H-360);
+    c.fillStyle='#d3c39f'; c.fillRect(1340,0,150,WORLD_H);
+    c.fillStyle='#d8c8a8'; c.fillRect(0,1120,WORLD_W,120);
+
+    c.save(); c.translate(SCENE_OX, SCENE_OY);
+    // central river and local plaza
+    c.fillStyle='#96c4c2'; c.fillRect(-920,-620,1840,70); c.fillStyle='#a8d2cf'; for(let x=-920;x<920;x+=36) c.fillRect(x,-590,22,3);
     c.fillStyle='#e6d8bb'; c.beginPath(); c.ellipse(660,430,430,235,0,0,Math.PI*2); c.fill();
     c.strokeStyle='rgba(113,95,61,.28)'; c.lineWidth=4; c.stroke();
-    // paths
     c.fillStyle='#d9c9a8'; c.fillRect(610,215,100,215); c.fillRect(220,385,900,90);
-    // buildings
     this.drawHouse(c,160,95,285,135,'公會之家','#7a8fb1');
     this.drawHouse(c,850,90,265,130,'雜貨商店','#ce9e63');
     this.drawBoard(c,500,185);
-    // garden plots
     this.drawPlot(c,480,80,280,78); this.drawPlot(c,1120,270,100,130);
-    // lamps / benches / trees
     for(const [x,y] of [[90,270],[1160,250],[230,575],[1020,570]]) this.drawLamp(c,x,y);
     for(const [x,y] of [[180,505],[1080,490]]) this.drawBench(c,x,y);
     for(const [x,y,s] of [[60,100,1.1],[1140,110,.9],[80,620,.85],[1200,620,1.15],[350,250,.65],[945,500,.6]]) this.drawTree(c,x,y,s);
-    // plaza fountain
     c.fillStyle='#aac0bb'; c.beginPath(); c.arc(660,430,48,0,Math.PI*2); c.fill(); c.strokeStyle='#879f98'; c.stroke();
     c.fillStyle='#84b3b1'; c.beginPath(); c.arc(660,430,35,0,Math.PI*2); c.fill();
     c.fillStyle='#fff0c2'; c.beginPath(); c.arc(660,430,7,0,Math.PI*2); c.fill();
-    // title board label
     c.fillStyle='#5c5a4b'; c.font='700 16px ui-rounded, system-ui'; c.textAlign='center'; c.fillText('星光旅團中央廣場',660,115);
+    c.restore();
+
+    // outer-world landmarks give the camera somewhere to travel without
+    // revealing or scaling the whole world into a single screen.
+    for(const [x,y,s] of [[260,520,1.3],[520,1520,1.1],[2920,520,1.0],[3100,1650,1.35],[800,1980,1.2],[2500,2050,1.0],[100,1900,.9]]) this.drawTree(c,x,y,s);
+    this.drawHouse(c,110,980,230,120,'河畔小屋','#8c9aa6');
+    this.drawHouse(c,2940,820,240,125,'旅行者之家','#b48768');
+    this.drawBoard(c,2600,1360);
   }
 
   drawHouse(c,x,y,w,h,label,roof){

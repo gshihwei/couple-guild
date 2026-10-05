@@ -1,13 +1,13 @@
-const KEY = 'couple-guild-v0.2.4-state';
-const LEGACY_KEYS = ['couple-guild-v0.2.3-state', 'couple-guild-v0.2.2-state', 'couple-guild-v0.2.1-state', 'couple-guild-v0.1-state'];
+const KEY = 'couple-guild-v0.2.6-state';
+const LEGACY_KEYS = ['couple-guild-v0.2.5-state', 'couple-guild-v0.2.4-state', 'couple-guild-v0.2.3-state', 'couple-guild-v0.2.2-state', 'couple-guild-v0.2.1-state', 'couple-guild-v0.1-state'];
 
 const defaultState = {
   guild: { name: '星光旅團', level: 3, xp: 180, gold: 520 },
-  player: { name: '我', x: 630, y: 430, skin: '#d8a06b', shirt: '#567a67' },
-  partner: { name: '另一半', x: 760, y: 450, skin: '#c58f63', shirt: '#9c6b58' },
+  player: { name: '我', x: 1770, y: 1200, skin: '#d8a06b', shirt: '#567a67' },
+  partner: { name: '另一半', x: 1900, y: 1220, skin: '#c58f63', shirt: '#9c6b58' },
   cats: {
-    fly: { id:'fly', name:'飛飛', coat:'custom', personality:'affectionate', x:690, y:500, energy:72, hunger:40, mood:'想找人撒嬌', target:null, state:'wander' },
-    hu:  { id:'hu', name:'呼呼', coat:'custom', personality:'mischievous', x:830, y:380, energy:82, hunger:56, mood:'到處亂晃', target:null, state:'wander' }
+    fly: { id:'fly', name:'飛飛', coat:'custom', personality:'affectionate', x:1830, y:1270, energy:72, hunger:40, mood:'想找人撒嬌', target:null, state:'wander' },
+    hu:  { id:'hu', name:'呼呼', coat:'custom', personality:'mischievous', x:1970, y:1150, energy:82, hunger:56, mood:'到處亂晃', target:null, state:'wander' }
   },
   food: 5,
   tasks: [
@@ -25,6 +25,7 @@ const defaultState = {
     '呼呼正在觀察兩個人誰比較好欺負。'
   ],
   selectedPet: null,
+  worldVersion: 2,
 };
 
 export function loadState() {
@@ -34,12 +35,23 @@ export function loadState() {
     const raw = current || (legacyKey ? localStorage.getItem(legacyKey) : null);
     if (!raw) return structuredClone(defaultState);
     const parsed = JSON.parse(raw);
+    const parsedWorldVersion = Number(parsed?.worldVersion || 0);
     const state = merge(defaultState, parsed);
     // V0.2.4 introduces the photo-based cat sprites. Legacy saves get the
     // new reference appearance once; later user-selected coat settings persist.
     if (!current) {
       if (state.cats?.fly) state.cats.fly.coat = 'custom';
       if (state.cats?.hu) state.cats.hu.coat = 'custom';
+    }
+    // V0.2.6 moves the playable plaza into the center of a larger world so
+    // the camera can show a local 16:9 viewport instead of fitting the whole map.
+    if (parsedWorldVersion < 2) {
+      const dx = 1140, dy = 770;
+      for (const actor of [state.player, state.partner, ...(Object.values(state.cats || {}))]) {
+        if (!actor) continue;
+        actor.x += dx; actor.y += dy;
+      }
+      state.worldVersion = 2;
     }
     return state;
   } catch { return structuredClone(defaultState); }

@@ -33,7 +33,7 @@ npm run build
 
 產物在 `dist/`，可部署至任何靜態網站主機。
 
-## V0.2.5 貓咪設定
+## V0.2.6 貓咪設定
 
 寵物面板可使用 ⚙️ 調整飛飛／呼呼：花色與性格。設定會儲存在 localStorage，且不需要修改遊戲程式。
 
@@ -62,8 +62,8 @@ git branch -M main
 ```
 
 
-## V0.2.5
+## V0.2.6
 - Landscape-first gameplay layout
 - Mobile portrait shows a rotate-to-landscape prompt
 - Landscape HUD / navigation / panels optimized for wider screens
-- PWA manifest orientation set to landscape
+- The game camera shows only the local area around the player
