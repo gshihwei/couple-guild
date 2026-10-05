@@ -1,0 +1,14 @@
+services:
+  - type: web
+    runtime: static
+    name: couple-guild
+    buildCommand: npm run build
+    staticPublishPath: ./dist
+    autoDeployTrigger: commit
+    headers:
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache
+      - path: /manifest.webmanifest
+        name: Cache-Control
+        value: no-cache

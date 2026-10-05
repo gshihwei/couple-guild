@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#20352d" />
+  <meta name="description" content="雙人生活 RPG：把兩個人的日常變成共同冒險。" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+  <title>Couple Guild · 雙人公會</title>
+  <style>
+    :root { color-scheme: light; --ink:#26332e; --paper:#f8efd8; --paper2:#fff9ea; --line:#d9c89f; --green:#3d6d58; --green2:#315746; --accent:#d59a58; --danger:#a85652; }
+    * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html, body { margin:0; min-height:100%; background:#15231e; font-family: ui-rounded, "Noto Sans TC", system-ui, sans-serif; color:var(--ink); }
+    body { display:flex; justify-content:center; overflow:hidden; }
+    button, input, textarea, select { font:inherit; }
+    button { border:0; cursor:pointer; }
+    #app { position:relative; width:min(100vw, 1024px); height:100dvh; overflow:hidden; background:#20352d; }
+    #game { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
+    .glass { background:rgba(255,250,237,.94); border:1px solid rgba(92,73,42,.16); box-shadow:0 12px 36px rgba(20,31,25,.18); backdrop-filter:blur(10px); }
+    .hud { position:absolute; left:12px; right:12px; top:max(12px, env(safe-area-inset-top)); display:flex; gap:10px; align-items:stretch; pointer-events:none; }
+    .guild-card { flex:1; min-width:0; padding:10px 12px; border-radius:18px; }
+    .guild-title { font-weight:800; font-size:15px; }
+    .guild-sub { font-size:11px; opacity:.67; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .stats { display:flex; gap:7px; }
+    .stat { min-width:66px; padding:8px 10px; border-radius:16px; text-align:center; }
+    .stat b { display:block; font-size:15px; }
+    .stat span { font-size:10px; opacity:.62; }
+    .toast { position:absolute; left:50%; top:78px; transform:translateX(-50%) translateY(-10px); opacity:0; transition:.25s ease; padding:9px 14px; border-radius:999px; color:#fff; background:rgba(34,51,44,.92); font-size:13px; font-weight:700; pointer-events:none; white-space:nowrap; z-index:30; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .bottom-nav { position:absolute; left:10px; right:10px; bottom:max(10px, env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(5,1fr); gap:6px; padding:7px; border-radius:20px; }
+    .nav-btn { background:transparent; color:#53645b; padding:7px 4px; border-radius:14px; font-size:11px; display:flex; flex-direction:column; align-items:center; gap:3px; }
+    .nav-btn.active { background:#315746; color:#fffaf0; }
+    .nav-icon { font-size:20px; line-height:1; }
+    .panel { position:absolute; inset:64px 10px calc(74px + env(safe-area-inset-bottom)) 10px; border-radius:24px; padding:16px; overflow:auto; z-index:20; transform:translateY(16px); opacity:0; pointer-events:none; transition:.2s ease; }
+    .panel.open { transform:none; opacity:1; pointer-events:auto; }
+    .panel-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    .panel-head h2 { margin:0; font-size:20px; }
+    .close { width:34px; height:34px; border-radius:50%; background:#e9dfc4; color:#4b493d; font-size:20px; }
+    .section-note { margin:-4px 0 12px; opacity:.64; font-size:12px; }
+    .card { background:rgba(255,252,241,.84); border:1px solid #eadcbf; border-radius:17px; padding:12px; margin-bottom:10px; }
+    .task-card { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; }
+    .task-title { font-weight:800; }
+    .task-meta { margin-top:5px; display:flex; flex-wrap:wrap; gap:5px; font-size:11px; color:#6a6c61; }
+    .pill { padding:4px 7px; border-radius:999px; background:#efe5ca; }
+    .pill.green { background:#dcebdd; color:#3f654f; }
+    .pill.gold { background:#f6e2b9; color:#8b641e; }
+    .task-actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+    .primary, .secondary, .danger { padding:8px 12px; border-radius:12px; font-weight:800; font-size:12px; }
+    .primary { background:#3d6d58; color:#fff; }
+    .secondary { background:#e6dcc2; color:#4c524a; }
+    .danger { background:#ead0cd; color:#844542; }
+    .pet-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
+    .pet-card { padding:14px; border-radius:20px; border:1px solid #eadcbf; background:#fffaf0; }
+    .pet-avatar { height:120px; border-radius:18px; background:linear-gradient(180deg,#f1e6c8,#dce7dc); display:flex; align-items:center; justify-content:center; font-size:72px; overflow:hidden; }
+    .pet-avatar img { max-width:100%; max-height:116px; object-fit:contain; display:block; }
+    .pet-name { font-size:18px; font-weight:900; margin-top:10px; }
+    .pet-tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+    .pet-mood { font-size:11px; opacity:.64; margin:3px 0 10px; }
+    .pet-buttons { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+    .shop-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .shop-item { padding:14px; border-radius:18px; background:#fffaf0; border:1px solid #eadcbf; }
+    .shop-item h3 { margin:0 0 4px; font-size:15px; }
+    .price { color:#8b641e; font-weight:900; margin:6px 0 10px; }
+    .journal-item { display:grid; grid-template-columns:54px 1fr; gap:10px; align-items:start; }
+    .journal-emoji { width:54px; height:54px; border-radius:16px; background:#e7efea; display:grid; place-items:center; font-size:28px; }
+    .journal-item b { font-size:13px; }
+    .journal-item p { margin:4px 0 0; font-size:12px; color:#696e67; line-height:1.5; }
+    .modal-backdrop { position:absolute; inset:0; background:rgba(12,20,17,.42); z-index:50; display:none; align-items:flex-end; justify-content:center; }
+    .modal-backdrop.show { display:flex; }
+    .modal { width:min(100%,620px); max-height:92dvh; overflow:auto; border-radius:26px 26px 0 0; background:#fff9ea; padding:18px; box-shadow:0 -16px 40px rgba(0,0,0,.25); }
+    .modal h3 { margin:0 0 12px; font-size:21px; }
+    label { display:block; font-size:12px; color:#6d7068; margin:10px 0 6px; }
+    input, textarea, select { width:100%; border:1px solid #d8c8a2; background:#fffdf5; border-radius:13px; padding:10px 11px; color:var(--ink); outline:none; }
+    textarea { min-height:88px; resize:vertical; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
+    .pet-interact { text-align:center; }
+    .pet-big { font-size:90px; line-height:1; margin:6px 0 10px; min-height:150px; display:flex; align-items:center; justify-content:center; }
+    .pet-big img { width:auto; height:150px; max-width:100%; object-fit:contain; display:block; }
+    .event-log { font-size:11px; opacity:.7; line-height:1.55; max-height:120px; overflow:auto; margin-top:8px; }
+    .touch-controls { position:absolute; left:14px; right:14px; bottom:calc(84px + env(safe-area-inset-bottom)); display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; z-index:12; }
+    .joystick { width:104px; height:104px; border-radius:50%; background:rgba(255,250,237,.20); border:1px solid rgba(255,255,255,.34); pointer-events:auto; touch-action:none; position:relative; }
+    .stick { position:absolute; width:44px; height:44px; left:30px; top:30px; border-radius:50%; background:rgba(255,250,237,.78); box-shadow:0 5px 16px rgba(0,0,0,.12); }
+    .quick-actions { display:grid; grid-template-columns:repeat(2,54px); gap:8px; pointer-events:auto; }
+    .quick-btn { width:54px; height:54px; border-radius:17px; background:rgba(255,250,237,.86); color:#355548; font-size:22px; box-shadow:0 5px 18px rgba(0,0,0,.15); }
+    .desktop-tip { position:absolute; right:14px; top:86px; background:rgba(255,250,237,.82); border-radius:12px; padding:7px 9px; font-size:10px; color:#56645c; pointer-events:none; }
+    .install-tip { position:absolute; left:50%; bottom:88px; transform:translateX(-50%); z-index:21; display:none; }
+    .install-tip button { margin-left:8px; }
+    .empty { text-align:center; padding:28px 14px; color:#7a7d74; }
+    @media (min-width: 760px) {
+      .bottom-nav { left:50%; right:auto; width:700px; transform:translateX(-50%); }
+      .touch-controls { display:none; }
+      .desktop-tip { display:block; }
+      .modal-backdrop { align-items:center; }
+      .modal { border-radius:26px; }
+    }
+    @media (max-width:560px) {
+      .hud { flex-direction:column; }
+      .stats { display:grid; grid-template-columns:repeat(3,1fr); }
+      .stat { min-width:0; }
+      .panel { inset:104px 8px calc(76px + env(safe-area-inset-bottom)) 8px; }
+      .pet-grid,.shop-grid { grid-template-columns:1fr; }
+      .desktop-tip { display:none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="雙人公會遊戲畫面"></canvas>
+
+    <div class="hud">
+      <div class="guild-card glass">
+        <div class="guild-title">🏰 星光旅團 · Lv.<span id="guildLevel">3</span></div>
+        <div class="guild-sub" id="guildStatus">今天也一起冒險吧</div>
+      </div>
+      <div class="stats glass">
+        <div class="stat"><b>🪙 <span id="gold">520</span></b><span>Gold</span></div>
+        <div class="stat"><b>⭐ <span id="xp">180</span></b><span>XP</span></div>
+        <div class="stat"><b>🍖 <span id="food">5</span></b><span>貓罐頭</span></div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <div class="desktop-tip">WASD / 方向鍵移動 · 靠近貓咪後可點選互動</div>
+
+    <div class="touch-controls">
+      <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>
+      <div class="quick-actions">
+        <button class="quick-btn" id="quickTask" title="任務">📜</button>
+        <button class="quick-btn" id="quickPet" title="寵物">🐾</button>
+      </div>
+    </div>
+
+    <div class="panel glass" id="panel-tasks">
+      <div class="panel-head"><div><h2>📜 公會委託</h2><div class="section-note">把生活中的小事變成一起完成的冒險。</div></div><button class="close" data-close="tasks">×</button></div>
+      <button class="primary" id="newTaskBtn">＋ 發布新委託</button>
+      <div id="taskList" style="margin-top:12px"></div>
+    </div>
+
+    <div class="panel glass" id="panel-pets">
+      <div class="panel-head"><div><h2>🐾 我們的貓</h2><div class="section-note">飛飛與呼呼會自己到處跑，偶爾來找你討摸討吃。</div></div><button class="close" data-close="pets">×</button></div>
+      <div class="pet-grid" id="petGrid"></div>
+      <div class="card" style="margin-top:12px"><b>🐈 最近發生</b><div class="event-log" id="eventLog"></div></div>
+    </div>
+
+    <div class="panel glass" id="panel-shop">
+      <div class="panel-head"><div><h2>🏪 公會商店</h2><div class="section-note">先做任務，再把金幣變成兩人的小確幸。</div></div><button class="close" data-close="shop">×</button></div>
+      <div class="shop-grid" id="shopGrid"></div>
+    </div>
+
+    <div class="panel glass" id="panel-journal">
+      <div class="panel-head"><div><h2>📖 冒險日誌</h2><div class="section-note">任務與貓咪事件會留下小小回憶。</div></div><button class="close" data-close="journal">×</button></div>
+      <div id="journalList"></div>
+    </div>
+
+    <div class="bottom-nav glass">
+      <button class="nav-btn active" data-nav="world"><span class="nav-icon">🏰</span>公會</button>
+      <button class="nav-btn" data-nav="tasks"><span class="nav-icon">📜</span>任務</button>
+      <button class="nav-btn" data-nav="pets"><span class="nav-icon">🐾</span>寵物</button>
+      <button class="nav-btn" data-nav="shop"><span class="nav-icon">🏪</span>商店</button>
+      <button class="nav-btn" data-nav="journal"><span class="nav-icon">📖</span>回憶</button>
+    </div>
+
+    <div class="install-tip glass" id="installTip">
+      <button class="primary" id="installBtn">安裝到主畫面</button>
+    </div>
+
+    <div class="modal-backdrop" id="taskModal">
+      <div class="modal">
+        <h3>📜 發布新委託</h3>
+        <form id="taskForm">
+          <label for="taskTitle">任務名稱</label>
+          <input id="taskTitle" maxlength="40" required placeholder="例如：幫我買早餐" />
+          <label for="taskDesc">說明</label>
+          <textarea id="taskDesc" maxlength="180" placeholder="想讓對方知道的事情……"></textarea>
+          <div class="form-row">
+            <div><label for="taskTarget">交給誰</label><select id="taskTarget"><option value="partner">另一半</option><option value="self">自己</option></select></div>
+            <div><label for="taskDifficulty">難度</label><select id="taskDifficulty"><option value="1">⭐</option><option value="2">⭐⭐</option><option value="3">⭐⭐⭐</option></select></div>
+          </div>
+          <div class="form-row">
+            <div><label for="taskGold">Gold</label><input id="taskGold" type="number" min="0" max="9999" value="100" /></div>
+            <div><label for="taskXp">XP</label><input id="taskXp" type="number" min="0" max="9999" value="40" /></div>
+          </div>
+          <div class="modal-actions"><button type="button" class="secondary" id="cancelTask">取消</button><button class="primary" type="submit">發布委託</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="catSettingsModal">
+      <div class="modal">
+        <h3 id="catSettingName">🐈 貓咪設定</h3>
+        <div class="section-note">花色只改外觀；性格會影響靠近、亂晃、討食與咬人的機率。</div>
+        <form id="catSettingsForm">
+          <input type="hidden" id="catSettingId" />
+          <label for="catCoat">花色</label>
+          <select id="catCoat">
+            <option value="custom">照片造型（原型）</option><option value="calico">三花</option>
+            <option value="orange">橘白</option>
+            <option value="tuxedo">黑白</option>
+            <option value="gray">灰白</option>
+            <option value="black">黑貓</option>
+            <option value="cream">奶油</option>
+          </select>
+          <label for="catPersonality">性格</label>
+          <select id="catPersonality">
+            <option value="affectionate">黏人</option>
+            <option value="mischievous">調皮</option>
+            <option value="foodie">貪吃</option>
+            <option value="lazy">慵懶</option>
+          </select>
+          <div class="card" style="margin-top:12px">
+            <b>性格效果</b>
+            <div id="catSettingHint" class="pet-mood">靠近玩家、亂晃、討食、玩耍與突然咬人的機率會隨性格改變。</div>
+          </div>
+          <div class="modal-actions"><button type="button" class="secondary" id="cancelCatSettings">取消</button><button class="primary" type="submit">儲存設定</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="petModal">
+      <div class="modal pet-interact">
+        <h3 id="petModalTitle">🐈 飛飛</h3>
+        <div class="pet-big" id="petModalEmoji">🐈</div>
+        <div id="petModalMood" style="opacity:.7;font-size:13px"></div>
+        <div class="modal-actions" style="justify-content:center">
+          <button class="secondary" data-pet-action="pet">❤️ 摸摸</button>
+          <button class="secondary" data-pet-action="feed">🍖 餵食</button>
+          <button class="primary" data-pet-action="play">🎾 玩耍</button>
+        </div>
+        <div style="margin-top:12px;font-size:12px;color:#76776f">摸牠有機率被咬，這是貓咪的特權 XD</div>
+        <div class="modal-actions" style="margin-top:8px"><button class="secondary" id="closePet">關閉</button></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

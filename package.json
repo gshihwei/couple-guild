@@ -1,0 +1,12 @@
+{
+  "name": "couple-guild",
+  "version": "0.2.4",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs",
+    "check": "node --check src/main.js && node --check src/game.js && node --check src/state.js && node --check src/ui.js && node --check server.mjs",
+    "build": "node scripts/build.mjs"
+  }
+}
