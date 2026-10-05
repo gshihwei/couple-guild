@@ -10,8 +10,13 @@ const mime = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset
 const server=createServer(async(req,res)=>{
   try{
     const url=decodeURIComponent(req.url?.split('?')[0]||'/');
-    let path=normalize(join(root,url==='/'?'index.html':url.replace(/^\//,'')));
+    let requestPath = url==='/' ? 'index.html' : url.replace(/^\//,'');
+    let path = normalize(join(root, requestPath));
     if(!path.startsWith(root)) throw new Error('bad path');
+    // Static development server: expose /assets and other public files just like the production build.
+    if (requestPath.startsWith('assets/') || requestPath.startsWith('icons/') || requestPath === 'manifest.webmanifest' || requestPath === 'sw.js') {
+      path = normalize(join(root, 'public', requestPath));
+    }
     try{const s=await stat(path); if(s.isDirectory()) path=join(path,'index.html');}catch{}
     let data; try{data=await readFile(path);}catch{path=join(root,'index.html');data=await readFile(path);}
     res.writeHead(200,{'Content-Type':mime[extname(path)]||'application/octet-stream','Cache-Control':'no-cache'}); res.end(data);
