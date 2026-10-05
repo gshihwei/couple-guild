@@ -51,7 +51,7 @@ export function initUI(state, game){
 
   function completeTask(id){
     const t=state.tasks.find(x=>x.id===id); if(!t||t.status==='completed'||t.status!=='accepted') return;
-    t.status='completed'; gainRewards(state,t.gold,t.xp); addJournal(state,'🎉',`委託完成：${t.title}`,`獲得 🪙 ${t.gold} 與 ⭐ ${t.xp} XP。`); saveState(state); refresh(); notify(`🎉 任務完成！ +${t.gold} Gold / +${t.xp} XP`);
+    t.status='completed'; gainRewards(state,t.gold,t.xp); addJournal(state,'🎉',`委託完成：${t.title}`,`獲得 🪙 ${t.gold} 與 ⭐ ${t.xp} XP。`); saveState(state); refresh(); game.addFloater(state.player.x, state.player.y-65, `+${t.gold} Gold`); game.addFloater(state.player.x, state.player.y-92, `+${t.xp} XP`); notify(`🎉 任務完成！ +${t.gold} Gold / +${t.xp} XP`);
   }
 
   $('newTaskBtn').addEventListener('click',()=>{$('taskModal').classList.add('show'); $('taskTitle').focus();});

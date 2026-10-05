@@ -1,5 +1,5 @@
-const KEY = 'couple-guild-v0.2.8-state';
-const LEGACY_KEYS = ['couple-guild-v0.2.5-state', 'couple-guild-v0.2.4-state', 'couple-guild-v0.2.3-state', 'couple-guild-v0.2.2-state', 'couple-guild-v0.2.1-state', 'couple-guild-v0.1-state'];
+const KEY = 'couple-guild-v0.2.9-state';
+const LEGACY_KEYS = ['couple-guild-v0.2.8-state', 'couple-guild-v0.2.5-state', 'couple-guild-v0.2.4-state', 'couple-guild-v0.2.3-state', 'couple-guild-v0.2.2-state', 'couple-guild-v0.2.1-state', 'couple-guild-v0.1-state'];
 
 const defaultState = {
   guild: { name: '星光旅團', level: 3, xp: 180, gold: 520 },
@@ -25,7 +25,7 @@ const defaultState = {
     '呼呼正在觀察兩個人誰比較好欺負。'
   ],
   selectedPet: null,
-  worldVersion: 5,
+  worldVersion: 6,
   taskBoardVisits: 0,
 };
 
@@ -77,6 +77,11 @@ export function loadState() {
       for (const task of state.tasks || []) {
         if (task.status === 'accepted' && !task.acceptedAt) task.acceptedAt = Date.now();
       }
+    }
+    if (state.worldVersion < 6) {
+      state.worldVersion = 6;
+      state.floaters = [];
+      state.dialogue = null;
     }
     return state;
   } catch { return structuredClone(defaultState); }
