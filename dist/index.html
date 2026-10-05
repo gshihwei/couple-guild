@@ -15,11 +15,11 @@
     body { display:flex; justify-content:center; overflow:hidden; }
     button, input, textarea, select { font:inherit; }
     button { border:0; cursor:pointer; }
-    #app { position:relative; width:min(100vw, 1024px); height:100dvh; overflow:hidden; background:#20352d; }
+    #app { position:relative; width:100vw; height:100dvh; overflow:hidden; background:#20352d; }
     #game { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
     .glass { background:rgba(255,250,237,.94); border:1px solid rgba(92,73,42,.16); box-shadow:0 12px 36px rgba(20,31,25,.18); backdrop-filter:blur(10px); }
-    .hud { position:absolute; left:12px; right:12px; top:max(12px, env(safe-area-inset-top)); display:flex; gap:10px; align-items:stretch; pointer-events:none; }
-    .guild-card { flex:1; min-width:0; padding:10px 12px; border-radius:18px; }
+    .hud { position:absolute; left:max(16px, env(safe-area-inset-left)); right:max(16px, env(safe-area-inset-right)); top:max(12px, env(safe-area-inset-top)); display:flex; gap:10px; align-items:stretch; pointer-events:none; z-index:10; }
+    .guild-card { flex:1; min-width:240px; padding:10px 12px; border-radius:18px; }
     .guild-title { font-weight:800; font-size:15px; }
     .guild-sub { font-size:11px; opacity:.67; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .stats { display:flex; gap:7px; }
@@ -28,11 +28,11 @@
     .stat span { font-size:10px; opacity:.62; }
     .toast { position:absolute; left:50%; top:78px; transform:translateX(-50%) translateY(-10px); opacity:0; transition:.25s ease; padding:9px 14px; border-radius:999px; color:#fff; background:rgba(34,51,44,.92); font-size:13px; font-weight:700; pointer-events:none; white-space:nowrap; z-index:30; }
     .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-    .bottom-nav { position:absolute; left:10px; right:10px; bottom:max(10px, env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(5,1fr); gap:6px; padding:7px; border-radius:20px; }
+    .bottom-nav { position:absolute; left:50%; right:auto; width:min(620px,calc(100vw - 32px)); transform:translateX(-50%); bottom:max(12px, env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(5,1fr); gap:6px; padding:7px; border-radius:20px; z-index:18; }
     .nav-btn { background:transparent; color:#53645b; padding:7px 4px; border-radius:14px; font-size:11px; display:flex; flex-direction:column; align-items:center; gap:3px; }
     .nav-btn.active { background:#315746; color:#fffaf0; }
     .nav-icon { font-size:20px; line-height:1; }
-    .panel { position:absolute; inset:64px 10px calc(74px + env(safe-area-inset-bottom)) 10px; border-radius:24px; padding:16px; overflow:auto; z-index:20; transform:translateY(16px); opacity:0; pointer-events:none; transition:.2s ease; }
+    .panel { position:absolute; left:auto; right:max(16px, env(safe-area-inset-right)); top:88px; bottom:88px; width:min(620px,calc(100vw - 32px)); border-radius:24px; padding:16px; overflow:auto; z-index:20; transform:translateY(16px); opacity:0; pointer-events:none; transition:.2s ease; }
     .panel.open { transform:none; opacity:1; pointer-events:auto; }
     .panel-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
     .panel-head h2 { margin:0; font-size:20px; }
@@ -79,30 +79,74 @@
     .pet-big { font-size:90px; line-height:1; margin:6px 0 10px; min-height:150px; display:flex; align-items:center; justify-content:center; }
     .pet-big img { width:auto; height:150px; max-width:100%; object-fit:contain; display:block; }
     .event-log { font-size:11px; opacity:.7; line-height:1.55; max-height:120px; overflow:auto; margin-top:8px; }
-    .touch-controls { position:absolute; left:14px; right:14px; bottom:calc(84px + env(safe-area-inset-bottom)); display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; z-index:12; }
+    .touch-controls { position:absolute; left:max(18px, env(safe-area-inset-left)); right:max(18px, env(safe-area-inset-right)); bottom:calc(92px + env(safe-area-inset-bottom)); display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; z-index:12; }
     .joystick { width:104px; height:104px; border-radius:50%; background:rgba(255,250,237,.20); border:1px solid rgba(255,255,255,.34); pointer-events:auto; touch-action:none; position:relative; }
     .stick { position:absolute; width:44px; height:44px; left:30px; top:30px; border-radius:50%; background:rgba(255,250,237,.78); box-shadow:0 5px 16px rgba(0,0,0,.12); }
     .quick-actions { display:grid; grid-template-columns:repeat(2,54px); gap:8px; pointer-events:auto; }
     .quick-btn { width:54px; height:54px; border-radius:17px; background:rgba(255,250,237,.86); color:#355548; font-size:22px; box-shadow:0 5px 18px rgba(0,0,0,.15); }
-    .desktop-tip { position:absolute; right:14px; top:86px; background:rgba(255,250,237,.82); border-radius:12px; padding:7px 9px; font-size:10px; color:#56645c; pointer-events:none; }
+    .desktop-tip { position:absolute; right:max(18px, env(safe-area-inset-right)); top:86px; background:rgba(255,250,237,.82); border-radius:12px; padding:7px 9px; font-size:10px; color:#56645c; pointer-events:none; }
     .install-tip { position:absolute; left:50%; bottom:88px; transform:translateX(-50%); z-index:21; display:none; }
     .install-tip button { margin-left:8px; }
     .empty { text-align:center; padding:28px 14px; color:#7a7d74; }
-    @media (min-width: 760px) {
-      .bottom-nav { left:50%; right:auto; width:700px; transform:translateX(-50%); }
+    /* Landscape-first gameplay: the world is designed around a 16:9 play area. */
+    @media (orientation: landscape) {
+      #app { max-width: 1440px; }
+      .hud { align-items:flex-start; }
+      .guild-card { flex:0 1 430px; }
+      .stats { margin-left:auto; }
+      .touch-controls { display:flex; }
+      .modal-backdrop { align-items:center; }
+      .modal { border-radius:26px; max-height:88dvh; }
+    }
+
+    @media (min-width: 900px) and (orientation: landscape) {
       .touch-controls { display:none; }
       .desktop-tip { display:block; }
-      .modal-backdrop { align-items:center; }
-      .modal { border-radius:26px; }
+      .bottom-nav { width:560px; }
     }
-    @media (max-width:560px) {
-      .hud { flex-direction:column; }
-      .stats { display:grid; grid-template-columns:repeat(3,1fr); }
-      .stat { min-width:0; }
-      .panel { inset:104px 8px calc(76px + env(safe-area-inset-bottom)) 8px; }
-      .pet-grid,.shop-grid { grid-template-columns:1fr; }
+
+    @media (orientation: portrait) {
+      body { background:#15231e; }
+      #app { width:100vw; height:100dvh; }
+      #game { filter:brightness(.68); }
+      .portrait-lock { display:flex !important; }
+    }
+
+    @media (max-width: 760px) and (orientation: landscape) {
+      .hud { left:10px; right:10px; top:max(8px,env(safe-area-inset-top)); }
+      .guild-card { min-width:0; padding:8px 10px; }
+      .guild-title { font-size:14px; }
+      .guild-sub { font-size:10px; }
+      .stat { min-width:60px; padding:7px 8px; }
+      .stat b { font-size:13px; }
+      .stat span { font-size:9px; }
+      .panel { top:68px; bottom:76px; right:8px; width:min(520px,calc(100vw - 16px)); }
+      .pet-grid,.shop-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .touch-controls { bottom:calc(78px + env(safe-area-inset-bottom)); }
+      .joystick { width:88px; height:88px; }
+      .stick { width:38px; height:38px; left:25px; top:25px; }
+      .quick-actions { grid-template-columns:repeat(2,48px); }
+      .quick-btn { width:48px; height:48px; font-size:20px; }
+      .bottom-nav { bottom:max(7px,env(safe-area-inset-bottom)); width:min(500px,calc(100vw - 150px)); }
+      .nav-btn { padding:5px 3px; font-size:10px; }
+      .nav-icon { font-size:17px; }
       .desktop-tip { display:none; }
     }
+
+    .portrait-lock {
+      display:none; position:absolute; inset:0; z-index:100;
+      align-items:center; justify-content:center; padding:28px;
+      background:rgba(24,39,32,.92); color:#fff9ea; text-align:center;
+    }
+    .portrait-lock-card {
+      width:min(360px,90vw); padding:28px 22px; border-radius:28px;
+      background:rgba(255,250,237,.97); color:#26332e;
+      box-shadow:0 20px 60px rgba(0,0,0,.28);
+    }
+    .rotate-icon { font-size:58px; line-height:1; margin-bottom:14px; animation:rotateHint 1.8s ease-in-out infinite; }
+    .portrait-lock h2 { margin:0 0 8px; font-size:22px; }
+    .portrait-lock p { margin:0; font-size:13px; line-height:1.7; color:#697068; }
+    @keyframes rotateHint { 0%,100% { transform:rotate(0deg); } 50% { transform:rotate(90deg); } }
   </style>
 </head>
 <body>
@@ -230,6 +274,13 @@
         </div>
         <div style="margin-top:12px;font-size:12px;color:#76776f">摸牠有機率被咬，這是貓咪的特權 XD</div>
         <div class="modal-actions" style="margin-top:8px"><button class="secondary" id="closePet">關閉</button></div>
+      </div>
+    </div>
+    <div class="portrait-lock" aria-live="polite">
+      <div class="portrait-lock-card">
+        <div class="rotate-icon">📱↔️</div>
+        <h2>請橫向遊玩</h2>
+        <p>Couple Guild 的小鎮是為橫向畫面設計的。<br>請把手機旋轉成橫向，就可以開始冒險囉！</p>
       </div>
     </div>
   </div>

@@ -33,7 +33,7 @@ npm run build
 
 產物在 `dist/`，可部署至任何靜態網站主機。
 
-## V0.2.4 貓咪設定
+## V0.2.5 貓咪設定
 
 寵物面板可使用 ⚙️ 調整飛飛／呼呼：花色與性格。設定會儲存在 localStorage，且不需要修改遊戲程式。
 
@@ -60,3 +60,10 @@ git add .
 git commit -m "feat: deploy-ready couple guild v0.1"
 git branch -M main
 ```
+
+
+## V0.2.5
+- Landscape-first gameplay layout
+- Mobile portrait shows a rotate-to-landscape prompt
+- Landscape HUD / navigation / panels optimized for wider screens
+- PWA manifest orientation set to landscape
