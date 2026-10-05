@@ -3,11 +3,11 @@ const LEGACY_KEYS = ['couple-guild-v0.2.5-state', 'couple-guild-v0.2.4-state', '
 
 const defaultState = {
   guild: { name: '星光旅團', level: 3, xp: 180, gold: 520 },
-  player: { name: '我', x: 1770, y: 1200, skin: '#d8a06b', shirt: '#567a67' },
-  partner: { name: '另一半', x: 1900, y: 1220, skin: '#c58f63', shirt: '#9c6b58' },
+  player: { name: '我', x: 1770, y: 1280, skin: '#d8a06b', shirt: '#567a67' },
+  partner: { name: '另一半', x: 1900, y: 1320, skin: '#c58f63', shirt: '#9c6b58' },
   cats: {
-    fly: { id:'fly', name:'飛飛', coat:'custom', personality:'affectionate', x:1830, y:1270, energy:72, hunger:40, mood:'想找人撒嬌', target:null, state:'wander' },
-    hu:  { id:'hu', name:'呼呼', coat:'custom', personality:'mischievous', x:1970, y:1150, energy:82, hunger:56, mood:'到處亂晃', target:null, state:'wander' }
+    fly: { id:'fly', name:'飛飛', coat:'custom', personality:'affectionate', x:1830, y:1370, energy:72, hunger:40, mood:'想找人撒嬌', target:null, state:'wander' },
+    hu:  { id:'hu', name:'呼呼', coat:'custom', personality:'mischievous', x:1970, y:1270, energy:82, hunger:56, mood:'到處亂晃', target:null, state:'wander' }
   },
   food: 5,
   tasks: [
@@ -25,7 +25,7 @@ const defaultState = {
     '呼呼正在觀察兩個人誰比較好欺負。'
   ],
   selectedPet: null,
-  worldVersion: 3,
+  worldVersion: 4,
 };
 
 export function loadState() {
@@ -52,6 +52,18 @@ export function loadState() {
         actor.x += dx; actor.y += dy;
       }
       state.worldVersion = 2;
+    }
+    if (state.worldVersion < 4) {
+      // V0.2.7 hotfix: the original spawn (1770, 1200) overlaps the plaza
+      // collision strip, trapping the player inside an obstacle. Reset only
+      // the player/partner spawn when upgrading an older save.
+      state.worldVersion = 4;
+      state.player.x = 1770;
+      state.player.y = 1280;
+      state.partner.x = 1900;
+      state.partner.y = 1320;
+      if (state.cats?.fly) { state.cats.fly.x = 1830; state.cats.fly.y = 1370; }
+      if (state.cats?.hu) { state.cats.hu.x = 1970; state.cats.hu.y = 1270; }
     }
     if (state.worldVersion < 3) {
       state.worldVersion = 3;
