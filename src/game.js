@@ -80,7 +80,19 @@ export class TownGame {
   nearPlayer(cat){return dist(cat,this.state.player)<100||dist(cat,this.state.partner)<100;}
   interactNearest(){const target=this.findNearestInteractable();if(target)this.performInteraction(target);else {const cat=Object.values(this.state.cats).find(c=>this.nearPlayer(c));if(cat)this.cb.openPet(cat.id);else this.cb.notify('附近沒有可以互動的東西。');}}
   performInteraction(target){
-    if(target.type==='board'||target.type==='npc'){this.cb.openTasks();this.cb.notify(target.type==='board'?'📜 委託板：看看今天有什麼冒險！':'👋 公會管家：有新的生活委託可以接。');return;}
+    if(target.type==='board'){
+      this.state.taskBoardVisits=(this.state.taskBoardVisits||0)+1;
+      addJournal(this.state,'📜','查看公會委託板','你回到委託板，準備接受新任務或回報完成的委託。');
+      saveState(this.state);
+      this.cb.openTasks('board');
+      this.cb.notify('📜 委託板：可以接新任務，也可以回報已完成的委託。');
+      return;
+    }
+    if(target.type==='npc'){
+      this.cb.openTasks('npc');
+      this.cb.notify('👋 公會管家：想接任務的話，委託板就在旁邊喔。');
+      return;
+    }
     if(target.type==='npc-shop'){this.cb.openShop();this.cb.notify('🏪 雜貨商：今天想補充什麼？');return;}
     if(target.type==='house'){this.cb.notify('🏠 公會之家：兩個人的小基地。');addJournal(this.state,'🏠','回到公會之家','你在熟悉的小屋前停了一下。');saveState(this.state);}
   }
@@ -103,5 +115,5 @@ export class TownGame {
   drawNPC(c,x,y,name,shirt,apron){const bob=Math.sin(this.time/350+x)*1.2;c.save();c.translate(x,y+bob);c.fillStyle='rgba(46,61,50,.18)';c.beginPath();c.ellipse(0,20,18,7,0,0,Math.PI*2);c.fill();c.fillStyle=shirt;c.fillRect(-13,-2,26,25);c.fillStyle=apron;c.fillRect(-7,2,14,20);c.fillStyle='#c58f63';c.beginPath();c.arc(0,-14,12,0,Math.PI*2);c.fill();c.fillStyle='#5b4038';c.beginPath();c.arc(0,-19,12,Math.PI,Math.PI*2);c.fill();c.fillStyle='#fff4dd';c.fillRect(-9,14,7,12);c.fillRect(2,14,7,12);c.restore();c.fillStyle='#314238';c.font='800 10px ui-rounded,system-ui';c.textAlign='center';c.fillText(name,x,y-35);}
   drawCharacter(c,ch,isPartner){const moving=this.state.player===ch&&(this.keys.size>0||Math.hypot(this.joy.x,this.joy.y)>.1),bob=moving?Math.sin(this.walkFrame*2)*2:Math.sin(this.time/260+(isPartner?1:0))*1.2;c.save();c.translate(ch.x,ch.y+bob);c.fillStyle='rgba(46,61,50,.18)';c.beginPath();c.ellipse(0,20,18,7,0,0,Math.PI*2);c.fill();c.fillStyle=ch.shirt;c.fillRect(-12,-2,24,25);c.fillStyle=ch.skin;c.beginPath();c.arc(0,-14,12,0,Math.PI*2);c.fill();c.fillStyle='#4b3b36';c.beginPath();c.arc(-2,-20,11,Math.PI,Math.PI*2);c.fill();c.fillStyle='#f6eedf';c.fillRect(-9,14,7,12);c.fillRect(2,14,7,12);c.restore();c.fillStyle='#2f4138';c.font='700 11px ui-rounded,system-ui';c.textAlign='center';c.fillText(ch.name,ch.x,ch.y-33);}
   drawCat(c,cat){const coat=getCoat(cat),bob=cat.state==='sleep'?0:Math.sin(this.time/190+cat.x)*1.7,near=this.nearPlayer(cat),sprite=cat.coat==='custom'?this.catImages[cat.id]:null;c.save();c.translate(cat.x,cat.y+bob);c.fillStyle='rgba(47,56,45,.16)';c.beginPath();c.ellipse(0,18,20,7,0,0,Math.PI*2);c.fill();if(sprite&&sprite.complete&&sprite.naturalWidth){const h=88,r=sprite.naturalWidth/sprite.naturalHeight,w=h*r;c.drawImage(sprite,-w/2,-h+18,w,h);}else{c.fillStyle=coat.base;c.beginPath();c.roundRect(-17,-10,34,30,12);c.fill();c.fillStyle=coat.dark;c.beginPath();c.arc(-7,-5,8,0,Math.PI*2);c.fill();c.fillStyle=coat.patch;c.beginPath();c.arc(9,4,7,0,Math.PI*2);c.fill();c.fillStyle='#2d342f';c.beginPath();c.arc(-7,0,2.4,0,Math.PI*2);c.arc(7,0,2.4,0,Math.PI*2);c.fill();c.fillStyle='#c98888';c.beginPath();c.arc(0,7,3,0,Math.PI*2);c.fill();}c.restore();c.fillStyle='#514d45';c.font='800 10px ui-rounded,system-ui';c.textAlign='center';c.fillText(cat.name,cat.x,cat.y-48);if(near&&Math.floor(this.time/800)%2===0){c.fillStyle='#ffcad2';c.font='18px system-ui';c.fillText('♥',cat.x+30,cat.y-30);}if(cat.state==='hungry'){c.fillStyle='#fff1c6';c.font='16px system-ui';c.fillText('🍖',cat.x,cat.y-62);}if(cat.state==='sleep'){c.fillStyle='#fff1c6';c.font='13px system-ui';c.fillText('Zzz',cat.x+24,cat.y-34);}}
-  drawInteractionMarker(c){const t=this.interactionTarget;if(!t)return;const y=t.y-48+Math.sin(this.interactionPulse*Math.PI)*3;c.fillStyle='rgba(255,250,237,.94)';c.beginPath();c.roundRect(t.x-70,y-22,140,28,12);c.fill();c.fillStyle='#34493f';c.font='800 11px ui-rounded,system-ui';c.textAlign='center';c.fillText(`E  ${t.label}`,t.x,y-4);c.fillStyle='#68766e';c.font='9px ui-rounded,system-ui';c.fillText(t.hint,t.x,y+10);}
+  drawInteractionMarker(c){const t=this.interactionTarget;if(!t)return;const y=t.y-48+Math.sin(this.interactionPulse*Math.PI)*3;const active=(this.state.tasks||[]).filter(x=>x.status==='accepted').length;const label=t.type==='board'&&active?`E  ${t.label} · ${active}件待回報`:`E  ${t.label}`;c.fillStyle='rgba(255,250,237,.94)';c.beginPath();c.roundRect(t.x-105,y-22,210,28,12);c.fill();c.fillStyle='#34493f';c.font='800 11px ui-rounded,system-ui';c.textAlign='center';c.fillText(label,t.x,y-4);c.fillStyle='#68766e';c.font='9px ui-rounded,system-ui';c.fillText(t.hint,t.x,y+10);}
 }

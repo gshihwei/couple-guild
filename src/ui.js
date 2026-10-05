@@ -11,16 +11,24 @@ export function initUI(state, game){
     renderTasks(); renderPets(); renderShop(); renderJournal();
   };
 
+  let taskContext='menu';
   const navs=[...document.querySelectorAll('.nav-btn')];
   const panels={tasks:$('panel-tasks'),pets:$('panel-pets'),shop:$('panel-shop'),journal:$('panel-journal')};
   function closePanels(){ Object.values(panels).forEach(p=>p.classList.remove('open')); navs.forEach(b=>b.classList.toggle('active',b.dataset.nav==='world')); }
-  function openPanel(name){ closePanels(); panels[name].classList.add('open'); navs.forEach(b=>b.classList.toggle('active',b.dataset.nav===name)); }
+  function openPanel(name, context='menu'){ closePanels(); if(name==='tasks') taskContext=context; panels[name].classList.add('open'); navs.forEach(b=>b.classList.toggle('active',b.dataset.nav===name)); if(name==='tasks') renderTasks(); }
   navs.forEach(btn=>btn.addEventListener('click',()=> btn.dataset.nav==='world'?closePanels():openPanel(btn.dataset.nav)));
   document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closePanels));
-  $('quickTask').addEventListener('click',()=>openPanel('tasks')); $('quickPet').addEventListener('click',()=>openPanel('pets'));
+  $('quickTask').addEventListener('click',()=>openPanel('tasks','menu')); $('quickPet').addEventListener('click',()=>openPanel('pets'));
 
   function renderTasks(){
     const list=$('taskList'); list.innerHTML='';
+    const boardMode=taskContext==='board';
+    const acceptedCount=state.tasks.filter(t=>t.status==='accepted').length;
+    const header=document.createElement('div'); header.className='card'; header.style.marginBottom='10px';
+    header.innerHTML=boardMode
+      ? `<b>📍 委託板模式</b><div class="section-note" style="margin-top:4px">你人在中央廣場的委託板旁，可以接受新任務或回報已完成任務。</div>`
+      : `<b>🧭 冒險總覽</b><div class="section-note" style="margin-top:4px">真正的任務流程：到世界裡的委託板接受與回報。這裡可以查看進度。</div>`;
+    list.appendChild(header);
     if(!state.tasks.length){ list.innerHTML='<div class="empty">目前沒有委託，去發布第一張吧！</div>'; return; }
     for(const t of state.tasks){
       const el=document.createElement('div'); el.className='card task-card';
@@ -28,10 +36,13 @@ export function initUI(state, game){
       el.innerHTML=`<div><div class="task-title">${escapeHtml(t.title)}</div><div style="font-size:12px;color:#77766e;margin-top:4px">${escapeHtml(t.desc||'')}</div><div class="task-meta"><span class="pill">${'⭐'.repeat(t.difficulty)}</span><span class="pill gold">🪙 ${t.gold}</span><span class="pill">⭐ ${t.xp} XP</span><span class="pill">→ ${escapeHtml(t.target)}</span>${status}</div></div><div class="task-actions"></div>`;
       const actions=el.querySelector('.task-actions');
       if(t.status==='open'){
-        const accept=document.createElement('button'); accept.className='primary'; accept.textContent=t.target==='我'?'接下來做':'接受'; accept.onclick=()=>{ t.status='accepted'; addJournal(state,'📜',`接受委託：${t.title}`,'開始處理這項任務。'); saveState(state); refresh(); notify('任務已接下，冒險開始！'); };
+        const accept=document.createElement('button'); accept.className='primary'; accept.textContent=t.target==='我'?'接下來做':'接受';
+        accept.disabled=!boardMode;
+        accept.title=boardMode?'':'請走到世界裡的委託板接受任務';
+        accept.onclick=()=>{ if(!boardMode){notify('📍 請先走到中央廣場的委託板。');return;} t.status='accepted'; t.acceptedAt=Date.now(); addJournal(state,'📜',`接受委託：${t.title}`,'在委託板接下這項生活冒險。'); saveState(state); refresh(); notify('任務已接下！完成後回到委託板回報。'); };
         actions.appendChild(accept);
       } else if(t.status==='accepted'){
-        const done=document.createElement('button'); done.className='primary'; done.textContent='回報完成'; done.onclick=()=>completeTask(t.id);
+        const done=document.createElement('button'); done.className='primary'; done.textContent=boardMode?'回報完成':'到委託板回報'; done.disabled=!boardMode; done.title=boardMode?'':'請回到中央廣場委託板回報'; done.onclick=()=>{ if(!boardMode){notify('📍 完成任務後，回到委託板才能領取獎勵。');return;} completeTask(t.id); };
         actions.appendChild(done);
       } else { const ok=document.createElement('span'); ok.style.cssText='font-size:22px'; ok.textContent='✅'; actions.appendChild(ok); }
       list.appendChild(el);
@@ -39,7 +50,7 @@ export function initUI(state, game){
   }
 
   function completeTask(id){
-    const t=state.tasks.find(x=>x.id===id); if(!t||t.status==='completed') return;
+    const t=state.tasks.find(x=>x.id===id); if(!t||t.status==='completed'||t.status!=='accepted') return;
     t.status='completed'; gainRewards(state,t.gold,t.xp); addJournal(state,'🎉',`委託完成：${t.title}`,`獲得 🪙 ${t.gold} 與 ⭐ ${t.xp} XP。`); saveState(state); refresh(); notify(`🎉 任務完成！ +${t.gold} Gold / +${t.xp} XP`);
   }
 

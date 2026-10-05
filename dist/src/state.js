@@ -1,4 +1,4 @@
-const KEY = 'couple-guild-v0.2.7-state';
+const KEY = 'couple-guild-v0.2.8-state';
 const LEGACY_KEYS = ['couple-guild-v0.2.5-state', 'couple-guild-v0.2.4-state', 'couple-guild-v0.2.3-state', 'couple-guild-v0.2.2-state', 'couple-guild-v0.2.1-state', 'couple-guild-v0.1-state'];
 
 const defaultState = {
@@ -25,7 +25,8 @@ const defaultState = {
     '呼呼正在觀察兩個人誰比較好欺負。'
   ],
   selectedPet: null,
-  worldVersion: 4,
+  worldVersion: 5,
+  taskBoardVisits: 0,
 };
 
 export function loadState() {
@@ -69,6 +70,13 @@ export function loadState() {
       state.worldVersion = 3;
       state.player.x = clampNum(state.player.x, 90, 3510);
       state.player.y = clampNum(state.player.y, 150, 2250);
+    }
+    if (state.worldVersion < 5) {
+      state.worldVersion = 5;
+      state.taskBoardVisits = Number(state.taskBoardVisits || 0);
+      for (const task of state.tasks || []) {
+        if (task.status === 'accepted' && !task.acceptedAt) task.acceptedAt = Date.now();
+      }
     }
     return state;
   } catch { return structuredClone(defaultState); }
