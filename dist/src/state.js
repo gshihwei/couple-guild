@@ -1,5 +1,5 @@
-const KEY = 'couple-guild-v0.2.10-state';
-const LEGACY_KEYS = ['couple-guild-v0.2.9-state', 'couple-guild-v0.2.9-state', 'couple-guild-v0.2.8-state', 'couple-guild-v0.2.5-state', 'couple-guild-v0.2.4-state', 'couple-guild-v0.2.3-state', 'couple-guild-v0.2.2-state', 'couple-guild-v0.2.1-state', 'couple-guild-v0.1-state'];
+const KEY = 'couple-guild-v0.2.11-state';
+const LEGACY_KEYS = ['couple-guild-v0.2.10-state', 'couple-guild-v0.2.9-state', 'couple-guild-v0.2.8-state', 'couple-guild-v0.2.5-state', 'couple-guild-v0.2.4-state', 'couple-guild-v0.2.3-state', 'couple-guild-v0.2.2-state', 'couple-guild-v0.2.1-state', 'couple-guild-v0.1-state'];
 
 const defaultState = {
   guild: { name: '星光旅團', level: 3, xp: 180, gold: 520 },
@@ -25,7 +25,9 @@ const defaultState = {
     '呼呼正在觀察兩個人誰比較好欺負。'
   ],
   selectedPet: null,
-  worldVersion: 7,
+  worldVersion: 8,
+  settings: { reducedMotion:false, autoSave:true },
+  sessionStats: { playSeconds:0, tasksCompleted:0, petInteractions:0 },
   npcState: { steward: { x:1785, y:985, mood:'巡視中', target:null }, merchant: { x:1930, y:980, mood:'整理商品', target:null } },
   catAnimation: { fly:'idle', hu:'idle' },
   taskBoardVisits: 0,
@@ -89,6 +91,11 @@ export function loadState() {
       state.worldVersion = 7;
       state.npcState = state.npcState || structuredClone(defaultState.npcState);
       state.catAnimation = state.catAnimation || structuredClone(defaultState.catAnimation);
+    }
+    if (state.worldVersion < 8) {
+      state.worldVersion = 8;
+      state.settings = state.settings || structuredClone(defaultState.settings);
+      state.sessionStats = state.sessionStats || structuredClone(defaultState.sessionStats);
     }
     return state;
   } catch { return structuredClone(defaultState); }

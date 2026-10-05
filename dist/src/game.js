@@ -73,6 +73,7 @@ export class TownGame {
     this.camera.x+=(targetCamX-this.camera.x)*ease;this.camera.y+=(targetCamY-this.camera.y)*ease;
     this.interactionTarget=this.findNearestInteractable();this.interactionPulse=(this.interactionPulse+dt)%2;
     this.updateFloaters(dt);
+    if(this.state.settings?.reducedMotion) this.interactionPulse=0;
     if(this.time-this.lastSave>3000){this.lastSave=this.time;saveState(this.state);}
   }
 
