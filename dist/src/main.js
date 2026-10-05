@@ -7,6 +7,8 @@ const canvas=document.getElementById('game');
 let ui;
 const callbacks={
   openPet:(id)=>window.dispatchEvent(new CustomEvent('cg:openPet',{detail:id})),
+  openTasks:()=>ui?.openPanel('tasks'),
+  openShop:()=>ui?.openPanel('shop'),
   notify:(m)=>ui?.notify(m),
   refresh:()=>ui?.refresh(),
 };

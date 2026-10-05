@@ -1,4 +1,4 @@
-const KEY = 'couple-guild-v0.2.6-state';
+const KEY = 'couple-guild-v0.2.7-state';
 const LEGACY_KEYS = ['couple-guild-v0.2.5-state', 'couple-guild-v0.2.4-state', 'couple-guild-v0.2.3-state', 'couple-guild-v0.2.2-state', 'couple-guild-v0.2.1-state', 'couple-guild-v0.1-state'];
 
 const defaultState = {
@@ -25,7 +25,7 @@ const defaultState = {
     '呼呼正在觀察兩個人誰比較好欺負。'
   ],
   selectedPet: null,
-  worldVersion: 2,
+  worldVersion: 3,
 };
 
 export function loadState() {
@@ -53,6 +53,11 @@ export function loadState() {
       }
       state.worldVersion = 2;
     }
+    if (state.worldVersion < 3) {
+      state.worldVersion = 3;
+      state.player.x = clampNum(state.player.x, 90, 3510);
+      state.player.y = clampNum(state.player.y, 150, 2250);
+    }
     return state;
   } catch { return structuredClone(defaultState); }
 }
@@ -60,6 +65,8 @@ export function loadState() {
 export function saveState(state) {
   localStorage.setItem(KEY, JSON.stringify(state));
 }
+
+function clampNum(v,min,max){ const n=Number(v); return Number.isFinite(n) ? Math.max(min,Math.min(max,n)) : min; }
 
 function merge(base, override) {
   if (Array.isArray(base)) return Array.isArray(override) ? override : base;

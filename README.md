@@ -67,3 +67,14 @@ git branch -M main
 - Mobile portrait shows a rotate-to-landscape prompt
 - Landscape HUD / navigation / panels optimized for wider screens
 - The game camera shows only the local area around the player
+
+
+## V0.2.7
+- 完整探索 Gameplay Loop：移動 → 靠近 → E 互動 → 任務 / 商店 / 貓咪
+- 玩家 4 方向行走與簡易步行動畫
+- Camera 平滑跟隨與世界邊界
+- 中央廣場、外圍建築與河道碰撞
+- NPC 互動提示與公會管家 / 雜貨商
+- 委託板可直接開啟任務面板，任務接受 / 完成 / 獎勵維持 localStorage
+- 貓咪改為必須靠近才能互動，保留照片 Q 版素材與隨機咬人
+- Landscape-first PWA 與 Render build 流程維持不變
