@@ -78,3 +78,9 @@ git branch -M main
 - 委託板可直接開啟任務面板，任務接受 / 完成 / 獎勵維持 localStorage
 - 貓咪改為必須靠近才能互動，保留照片 Q 版素材與隨機咬人
 - Landscape-first PWA 與 Render build 流程維持不變
+
+
+## V0.2.10
+- 貓咪行為與動畫狀態強化
+- NPC 日常巡視／整理行為
+- 貓咪精力與狀態回饋

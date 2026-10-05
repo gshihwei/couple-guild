@@ -67,9 +67,9 @@ export function initUI(state, game){
   function renderPets(){
     const grid=$('petGrid'); grid.innerHTML='';
     for(const cat of Object.values(state.cats)){
-      const hunger=cat.hunger<35?'不太餓':cat.hunger<70?'有點想吃':'很餓了';
+      const hunger=cat.hunger<35?'不太餓':cat.hunger<70?'有點想吃':'很餓了'; const energy=cat.energy<30?'很累':cat.energy<60?'普通':'精神很好';
       const el=document.createElement('div'); el.className='pet-card';
-      el.innerHTML=`<div class="pet-avatar" data-coat="${cat.coat}"><img src="/assets/${cat.id}.png" alt="${escapeHtml(cat.name)}" /></div><div class="pet-name">${cat.name}</div><div class="pet-tags"><span class="pill">${CAT_COATS[cat.coat]?.label||'三花'}</span><span class="pill green">${CAT_PERSONALITIES[cat.personality]?.label||'黏人'}</span></div><div class="pet-mood">${cat.mood} · ${hunger}</div><div class="pet-buttons"><button class="secondary" data-a="pet">❤️</button><button class="secondary" data-a="feed">🍖</button><button class="primary" data-a="play">🎾</button><button class="secondary" data-a="settings">⚙️</button></div>`;
+      el.innerHTML=`<div class="pet-avatar" data-coat="${cat.coat}"><img src="/assets/${cat.id}.png" alt="${escapeHtml(cat.name)}" /></div><div class="pet-name">${cat.name}</div><div class="pet-tags"><span class="pill">${CAT_COATS[cat.coat]?.label||'三花'}</span><span class="pill green">${CAT_PERSONALITIES[cat.personality]?.label||'黏人'}</span></div><div class="pet-mood">${cat.mood} · ${hunger} · ${energy}</div><div class="pet-buttons"><button class="secondary" data-a="pet">❤️</button><button class="secondary" data-a="feed">🍖</button><button class="primary" data-a="play">🎾</button><button class="secondary" data-a="settings">⚙️</button></div>`;
       el.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{ state.selectedPet=cat.id; if(btn.dataset.a==='settings'){ openCatSettings(cat.id); return; } game.interactPet(cat.id,btn.dataset.a); refresh(); });
       grid.appendChild(el);
     }

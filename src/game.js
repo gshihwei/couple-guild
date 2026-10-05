@@ -33,7 +33,7 @@ export class TownGame {
     this.canvas=canvas; this.ctx=canvas.getContext('2d'); this.state=state; this.cb=callbacks;
     this.keys=new Set(); this.joy={x:0,y:0}; this.time=0; this.lastPetBrain=0; this.lastSave=0;
     this.camera={x:0,y:0}; this.interactionTarget=null; this.interactionPulse=0; this.floaters=[]; this.dialogueTimer=0;
-    this.playerFacing='down'; this.walkFrame=0;
+    this.playerFacing='down'; this.walkFrame=0; this.npcBrainAt=0; this.npcMotion={steward:0,merchant:0};
     this.catImages={fly:new Image(),hu:new Image()};
     this.catImages.fly.src='/assets/fly.png'; this.catImages.hu.src='/assets/hu.png';
     this.resize(); window.addEventListener('resize',()=>this.resize());
@@ -65,8 +65,9 @@ export class TownGame {
     else this.walkFrame=0;
 
     const q=this.state.partner,a=this.time/5200;q.x=SCENE_OX+755+Math.cos(a)*100;q.y=SCENE_OY+430+Math.sin(a*1.35)*70;
-    if(this.time-this.lastPetBrain>2200){this.lastPetBrain=this.time;this.decideCat();}
+    if(this.time-this.lastPetBrain>1800){this.lastPetBrain=this.time;this.decideCat();}
     for(const cat of Object.values(this.state.cats))this.updateCat(cat,dt);
+    this.updateNPCs(dt);
 
     const targetCamX=clamp(p.x-W/2,0,WORLD_W-W),targetCamY=clamp(p.y-H/2-CAMERA_AHEAD_Y,0,WORLD_H-H),ease=1-Math.exp(-dt*CAMERA_EASE);
     this.camera.x+=(targetCamX-this.camera.x)*ease;this.camera.y+=(targetCamY-this.camera.y)*ease;
@@ -101,8 +102,23 @@ export class TownGame {
     if(target.type==='house'){this.cb.notify('🏠 公會之家：兩個人的小基地。');this.showDialogue('公會之家', '歡迎回家。今天也辛苦啦。');addJournal(this.state,'🏠','回到公會之家','你在熟悉的小屋前停了一下。');saveState(this.state);}
   }
 
-  decideCat(){const choices=[this.state.player,this.state.partner];for(const cat of Object.values(this.state.cats)){const personality=getPersonality(cat),r=Math.random();if(cat.energy<18){cat.state='sleep';cat.target=null;continue;}if(cat.hunger>75&&Math.random()<personality.hunger){cat.state='hungry';cat.target=choices[Math.random()<.5?0:1];continue;}if(r<personality.approach){cat.target=choices[Math.random()<.55?0:1];cat.state='follow';}else if(r<personality.approach+personality.wander){cat.target=null;cat.state='wander';}else{cat.target=null;cat.state='idle';}}}
-  updateCat(cat,dt){const speed=cat.state==='sleep'?0:cat.state==='follow'||cat.state==='hungry'?58:34;if(cat.state==='follow'||cat.state==='hungry'){const t=cat.target;if(t){const dx=t.x-cat.x,dy=t.y-cat.y,d=Math.hypot(dx,dy);if(d>58){cat.x+=dx/d*speed*dt;cat.y+=dy/d*speed*dt;}else if(Math.random()<.0025){this.cb.notify(cat.state==='hungry'?`${cat.name}：喵～ 想吃飯了。`:`${cat.name}跑到你身邊撒嬌。`);addPetEvent(this.state,`${cat.name}跑去找人撒嬌。`);}}}else if(cat.state==='wander'){cat.x+=Math.cos(this.time/1700+cat.id.length)*speed*.35*dt;cat.y+=Math.sin(this.time/2100+cat.id.length*2)*speed*.35*dt;}cat.x=clamp(cat.x,100,WORLD_W-100);cat.y=clamp(cat.y,190,WORLD_H-150);cat.hunger=clamp(cat.hunger+dt*.25,0,100);cat.energy=clamp(cat.energy+(cat.state==='sleep'?dt*2:-dt*.15),10,100);}
+
+  updateNPCs(dt){
+    const ns=this.state.npcState || (this.state.npcState={});
+    const routes={steward:{home:{x:SCENE_OX+445,y:SCENE_OY+215},radius:70,speed:22},merchant:{home:{x:SCENE_OX+790,y:SCENE_OY+210},radius:46,speed:16}};
+    for(const [id,r] of Object.entries(routes)){
+      const n=ns[id] || (ns[id]={...r.home,mood:'巡視中'});
+      const phase=this.time/2600+(id==='merchant'?1.7:0);
+      const target={x:r.home.x+Math.cos(phase)*r.radius,y:r.home.y+Math.sin(phase*1.15)*r.radius*.55};
+      const dx=target.x-n.x,dy=target.y-n.y,d=Math.hypot(dx,dy)||1;
+      if(d>5){n.x+=dx/d*r.speed*dt;n.y+=dy/d*r.speed*dt;}
+      n.mood=id==='steward'?(d>20?'巡視公會':'整理委託'):(d>18?'補充貨架':'招呼客人');
+    }
+  }
+
+  decideCat(){const choices=[this.state.player,this.state.partner];for(const cat of Object.values(this.state.cats)){const personality=getPersonality(cat),r=Math.random();if(cat.energy<18){cat.state='sleep';cat.target=null;cat.animation='sleep';continue;}if(cat.hunger>75&&Math.random()<personality.hunger){cat.state='hungry';cat.target=choices[Math.random()<.5?0:1];cat.animation='walk';continue;}if(r<personality.approach){cat.target=choices[Math.random()<.55?0:1];cat.state='follow';cat.animation='walk';}else if(r<personality.approach+personality.wander){cat.target=null;cat.state='wander';cat.animation='walk';}else{cat.target=null;cat.state='idle';cat.animation='idle';}}}
+  updateCat(cat,dt){const speed=cat.state==='sleep'?0:cat.state==='follow'||cat.state==='hungry'?58:34;if(cat.state==='follow'||cat.state==='hungry'){const t=cat.target;if(t){const dx=t.x-cat.x,dy=t.y-cat.y,d=Math.hypot(dx,dy);if(d>58){cat.x+=dx/d*speed*dt;cat.y+=dy/d*speed*dt;}else if(Math.random()<.0025){this.cb.notify(cat.state==='hungry'?`${cat.name}：喵～ 想吃飯了。`:`${cat.name}跑到你身邊撒嬌。`);addPetEvent(this.state,`${cat.name}跑去找人撒嬌。`);}}}else if(cat.state==='wander'){cat.animation='walk';cat.x+=Math.cos(this.time/1700+cat.id.length)*speed*.35*dt;cat.y+=Math.sin(this.time/2100+cat.id.length*2)*speed*.35*dt;}if(cat.state==='sleep')cat.animation='sleep';
+    cat.x=clamp(cat.x,100,WORLD_W-100);cat.y=clamp(cat.y,190,WORLD_H-150);cat.hunger=clamp(cat.hunger+dt*.25,0,100);cat.energy=clamp(cat.energy+(cat.state==='sleep'?dt*2:-dt*.15),10,100);}
 
   interactPet(id,action){const cat=this.state.cats[id];if(!cat)return;if(!this.nearPlayer(cat)){this.cb.notify(`${cat.name}跑太遠了，靠近一點再互動。`);return;}if(action==='feed'){if(this.state.food<=0){this.cb.notify('貓罐頭吃完啦，先去商店補貨。');return;}this.state.food--;cat.hunger=clamp(cat.hunger-40,0,100);cat.energy=clamp(cat.energy+8,0,100);cat.state='idle';addPetEvent(this.state,`${cat.name}吃飽了，開始舔毛。`);addJournal(this.state,'🍖',`${cat.name}吃飯`,`你餵了${cat.name}一份罐頭。`);this.cb.notify(`${cat.name}：呼嚕呼嚕…… 🍖`);this.addFloater(cat.x,cat.y-55,'🍖 好吃！');}if(action==='play'){cat.energy=clamp(cat.energy-10,0,100);cat.hunger=clamp(cat.hunger+8,0,100);cat.state='wander';if(Math.random()<.1){addPetEvent(this.state,`${cat.name}玩到一半突然不玩了。`);this.cb.notify(`${cat.name}突然走掉了 XD`);}else{addPetEvent(this.state,`${cat.name}今天玩得很開心。`);addJournal(this.state,'🎾',`${cat.name}玩耍`,`陪${cat.name}玩了一下。`);this.cb.notify(`${cat.name}開心地追著玩具跑！`);this.addFloater(cat.x,cat.y-55,'🎾 好好玩！');}}if(action==='pet'){const bite=Math.random()<getPersonality(cat).bite;if(bite){cat.mood='今天不想被摸';addPetEvent(this.state,`🦷 ${cat.name}突然咬了一口 XD`);addJournal(this.state,'🦷',`${cat.name}咬人`,`剛剛明明還在呼嚕，結果突然咬了一口。`);this.cb.notify(`🦷 ${cat.name}：「喀。」突然咬了一口 XD`);this.addFloater(cat.x,cat.y-55,'🦷 喀！');}else{cat.mood='正在呼嚕';addPetEvent(this.state,`${cat.name}被摸得很開心。`);this.cb.notify(`${cat.name}：呼嚕呼嚕 ❤️`);this.addFloater(cat.x,cat.y-55,'❤️ 呼嚕');}}saveState(this.state);this.cb.refresh();}
 
@@ -115,8 +131,8 @@ export class TownGame {
   drawBench(c,x,y){c.fillStyle='#8d6d4d';c.fillRect(x,y,72,10);c.fillRect(x,y+22,72,8);c.fillRect(x+5,y+29,7,20);c.fillRect(x+60,y+29,7,20);}
   drawTree(c,x,y,s){c.fillStyle='#6e523d';c.fillRect(x-7*s,y+24*s,14*s,34*s);c.fillStyle='#7da16f';for(const [dx,dy,r] of [[0,0,34],[28,6,28],[-26,8,28],[6,26,26]]){c.beginPath();c.arc(x+dx*s,y+dy*s,r*s,0,Math.PI*2);c.fill();}}
 
-  drawNPCs(c){this.drawNPC(c,SCENE_OX+445,SCENE_OY+215,'公會管家','#fff1d8','#9a6a57');this.drawNPC(c,SCENE_OX+790,SCENE_OY+210,'雜貨商','#d9edcf','#6c815f');}
-  drawNPC(c,x,y,name,shirt,apron){const bob=Math.sin(this.time/350+x)*1.2;c.save();c.translate(x,y+bob);c.fillStyle='rgba(46,61,50,.18)';c.beginPath();c.ellipse(0,20,18,7,0,0,Math.PI*2);c.fill();c.fillStyle=shirt;c.fillRect(-13,-2,26,25);c.fillStyle=apron;c.fillRect(-7,2,14,20);c.fillStyle='#c58f63';c.beginPath();c.arc(0,-14,12,0,Math.PI*2);c.fill();c.fillStyle='#5b4038';c.beginPath();c.arc(0,-19,12,Math.PI,Math.PI*2);c.fill();c.fillStyle='#fff4dd';c.fillRect(-9,14,7,12);c.fillRect(2,14,7,12);c.restore();c.fillStyle='#314238';c.font='800 10px ui-rounded,system-ui';c.textAlign='center';c.fillText(name,x,y-35);}
+  drawNPCs(c){const ns=this.state.npcState||{}; const a=ns.steward||{x:SCENE_OX+445,y:SCENE_OY+215,mood:'巡視中'}, b=ns.merchant||{x:SCENE_OX+790,y:SCENE_OY+210,mood:'整理商品'}; this.drawNPC(c,a.x,a.y,'公會管家','#fff1d8','#9a6a57',a.mood);this.drawNPC(c,b.x,b.y,'雜貨商','#d9edcf','#6c815f',b.mood);}
+  drawNPC(c,x,y,name,shirt,apron,mood=''){const bob=Math.sin(this.time/350+x)*1.2;c.save();c.translate(x,y+bob);c.fillStyle='rgba(46,61,50,.18)';c.beginPath();c.ellipse(0,20,18,7,0,0,Math.PI*2);c.fill();c.fillStyle=shirt;c.fillRect(-13,-2,26,25);c.fillStyle=apron;c.fillRect(-7,2,14,20);c.fillStyle='#c58f63';c.beginPath();c.arc(0,-14,12,0,Math.PI*2);c.fill();c.fillStyle='#5b4038';c.beginPath();c.arc(0,-19,12,Math.PI,Math.PI*2);c.fill();c.fillStyle='#fff4dd';c.fillRect(-9,14,7,12);c.fillRect(2,14,7,12);c.restore();c.fillStyle='#314238';c.font='800 10px ui-rounded,system-ui';c.textAlign='center';c.fillText(name,x,y-35); if(mood){c.fillStyle='#68766e';c.font='700 8px ui-rounded,system-ui';c.fillText(mood,x,y-47);} }
   drawCharacter(c,ch,isPartner){const moving=this.state.player===ch&&(this.keys.size>0||Math.hypot(this.joy.x,this.joy.y)>.1),step=moving?Math.sin(this.walkFrame*2)*2.2:0,bob=moving?Math.abs(Math.sin(this.walkFrame*2))*1.2:Math.sin(this.time/260+(isPartner?1:0))*1.2;c.save();c.translate(ch.x,ch.y+bob);c.fillStyle='rgba(46,61,50,.18)';c.beginPath();c.ellipse(0,20,18,7,0,0,Math.PI*2);c.fill();c.fillStyle=ch.shirt;c.fillRect(-12,-2,24,25);c.fillStyle=ch.skin;c.beginPath();c.arc(0,-14,12,0,Math.PI*2);c.fill();c.fillStyle='#4b3b36';c.beginPath();c.arc(-2,-20,11,Math.PI,Math.PI*2);c.fill();c.fillStyle='#f6eedf';c.fillRect(-9-step,14+Math.max(0,step),7,12);c.fillRect(2+step,14+Math.max(0,-step),7,12);c.restore();c.fillStyle='#2f4138';c.font='700 11px ui-rounded,system-ui';c.textAlign='center';c.fillText(ch.name,ch.x,ch.y-33);}
   drawCat(c,cat){const coat=getCoat(cat),bob=cat.state==='sleep'?0:Math.sin(this.time/190+cat.x)*1.7,near=this.nearPlayer(cat),sprite=cat.coat==='custom'?this.catImages[cat.id]:null;c.save();c.translate(cat.x,cat.y+bob);c.fillStyle='rgba(47,56,45,.16)';c.beginPath();c.ellipse(0,18,20,7,0,0,Math.PI*2);c.fill();if(sprite&&sprite.complete&&sprite.naturalWidth){const h=88,r=sprite.naturalWidth/sprite.naturalHeight,w=h*r;c.drawImage(sprite,-w/2,-h+18,w,h);}else{c.fillStyle=coat.base;c.beginPath();c.roundRect(-17,-10,34,30,12);c.fill();c.fillStyle=coat.dark;c.beginPath();c.arc(-7,-5,8,0,Math.PI*2);c.fill();c.fillStyle=coat.patch;c.beginPath();c.arc(9,4,7,0,Math.PI*2);c.fill();c.fillStyle='#2d342f';c.beginPath();c.arc(-7,0,2.4,0,Math.PI*2);c.arc(7,0,2.4,0,Math.PI*2);c.fill();c.fillStyle='#c98888';c.beginPath();c.arc(0,7,3,0,Math.PI*2);c.fill();}c.restore();c.fillStyle='#514d45';c.font='800 10px ui-rounded,system-ui';c.textAlign='center';c.fillText(cat.name,cat.x,cat.y-48);if(near&&Math.floor(this.time/800)%2===0){c.fillStyle='#ffcad2';c.font='18px system-ui';c.fillText('♥',cat.x+30,cat.y-30);}if(cat.state==='hungry'){c.fillStyle='#fff1c6';c.font='16px system-ui';c.fillText('🍖',cat.x,cat.y-62);}if(cat.state==='sleep'){c.fillStyle='#fff1c6';c.font='13px system-ui';c.fillText('Zzz',cat.x+24,cat.y-34);}}
   addFloater(x,y,text){this.floaters.push({x,y,text,life:1});}
