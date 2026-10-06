@@ -3,8 +3,10 @@ const LEGACY_KEYS = ['couple-guild-v0.2.10-state', 'couple-guild-v0.2.9-state', 
 
 const defaultState = {
   guild: { name: '星光旅團', level: 3, xp: 180, gold: 520 },
+  guildHome: { version:1, level:1, furniture:[] },
   player: { name: '我', x: 1770, y: 1280, skin: '#d8a06b', shirt: '#567a67' },
   partner: { name: '另一半', x: 1900, y: 1320, skin: '#c58f63', shirt: '#9c6b58' },
+  remotePlayers: {},
   cats: {
     fly: { id:'fly', name:'飛飛', coat:'custom', personality:'affectionate', x:1830, y:1370, energy:72, hunger:40, mood:'想找人撒嬌', target:null, state:'wander' },
     hu:  { id:'hu', name:'呼呼', coat:'custom', personality:'mischievous', x:1970, y:1270, energy:82, hunger:56, mood:'到處亂晃', target:null, state:'wander' }

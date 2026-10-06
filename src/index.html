@@ -33,6 +33,14 @@
     .nav-btn.active { background:#315746; color:#fffaf0; }
     .nav-icon { font-size:20px; line-height:1; }
     .panel { position:absolute; left:auto; right:max(16px, env(safe-area-inset-right)); top:88px; bottom:88px; width:min(620px,calc(100vw - 32px)); border-radius:24px; padding:16px; overflow:auto; z-index:20; transform:translateY(16px); opacity:0; pointer-events:none; transition:.2s ease; }
+    /* Feature workspace: entering a feature always replaces the town surface. */
+    #app.feature-mode #game,
+    #app.feature-mode .hud,
+    #app.feature-mode .bottom-nav,
+    #app.feature-mode .touch-controls,
+    #app.feature-mode .desktop-tip,
+    #app.feature-mode .toast { visibility:hidden; pointer-events:none; }
+    #app.feature-mode .panel.open { position:fixed; inset:0; width:100vw; height:100dvh; max-height:none; margin:0; border-radius:0; padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left)); transform:none; opacity:1; z-index:200; overflow:auto; pointer-events:auto; }
     .panel.open { transform:none; opacity:1; pointer-events:auto; }
     .panel-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
     .panel-head h2 { margin:0; font-size:20px; }
@@ -69,6 +77,13 @@
     .modal-backdrop { position:absolute; inset:0; background:rgba(12,20,17,.42); z-index:50; display:none; align-items:flex-end; justify-content:center; }
     .modal-backdrop.show { display:flex; }
     .modal { width:min(100%,620px); max-height:92dvh; overflow:auto; border-radius:26px 26px 0 0; background:#fff9ea; padding:18px; box-shadow:0 -16px 40px rgba(0,0,0,.25); }
+    /* Touch devices use full-screen feature workspaces instead of covering the town with a small modal. */
+    @media (hover: none) and (pointer: coarse) {
+      .modal-backdrop { align-items:stretch; justify-content:stretch; }
+      .modal { width:100vw; height:100dvh; max-height:none; border-radius:0; padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left)); box-shadow:none; }
+      .modal h3 { font-size:24px; }
+      .modal-actions { position:sticky; bottom:0; padding-top:12px; padding-bottom:env(safe-area-inset-bottom); background:linear-gradient(transparent,#fff9ea 24%); }
+    }
     .modal h3 { margin:0 0 12px; font-size:21px; }
     label { display:block; font-size:12px; color:#6d7068; margin:10px 0 6px; }
     input, textarea, select { width:100%; border:1px solid #d8c8a2; background:#fffdf5; border-radius:13px; padding:10px 11px; color:var(--ink); outline:none; }
@@ -99,7 +114,7 @@
       .modal { border-radius:26px; max-height:88dvh; }
     }
 
-    @media (min-width: 900px) and (orientation: landscape) {
+    @media (min-width: 900px) and (orientation: landscape) and (hover: hover) and (pointer: fine) {
       .touch-controls { display:none; }
       .desktop-tip { display:block; }
       .bottom-nav { width:560px; }
@@ -171,6 +186,7 @@
     <div class="touch-controls">
       <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>
       <div class="quick-actions">
+        <button class="quick-btn" id="quickInteract" title="互動">✋</button>
         <button class="quick-btn" id="quickTask" title="任務">📜</button>
         <button class="quick-btn" id="quickPet" title="寵物">🐾</button>
       </div>
@@ -284,6 +300,7 @@
       </div>
     </div>
   </div>
+  <script src="/config.js"></script>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

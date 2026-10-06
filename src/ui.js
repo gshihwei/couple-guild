@@ -2,11 +2,14 @@ import { addJournal, gainRewards, saveState } from './state.js';
 import { CAT_COATS, CAT_PERSONALITIES } from './cats.js';
 
 export function initUI(state, game){
+  let multiplayer=null;
   const $=id=>document.getElementById(id);
   const toast=$('toast');
   let toastTimer;
   const notify=(msg)=>{ toast.textContent=msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.classList.remove('show'),2600); };
   const refresh=()=>{
+    const guildTitle=$('guildTitle');
+    if(guildTitle) guildTitle.textContent=state.guild.name||'星光旅團';
     $('guildLevel').textContent=state.guild.level; $('gold').textContent=state.guild.gold; $('xp').textContent=state.guild.xp; $('food').textContent=state.food;
     renderTasks(); renderPets(); renderShop(); renderJournal();
   };
@@ -14,11 +17,11 @@ export function initUI(state, game){
   let taskContext='menu';
   const navs=[...document.querySelectorAll('.nav-btn')];
   const panels={tasks:$('panel-tasks'),pets:$('panel-pets'),shop:$('panel-shop'),journal:$('panel-journal')};
-  function closePanels(){ Object.values(panels).forEach(p=>p.classList.remove('open')); navs.forEach(b=>b.classList.toggle('active',b.dataset.nav==='world')); }
-  function openPanel(name, context='menu'){ closePanels(); if(name==='tasks') taskContext=context; panels[name].classList.add('open'); navs.forEach(b=>b.classList.toggle('active',b.dataset.nav===name)); if(name==='tasks') renderTasks(); }
+  function closePanels(){ Object.values(panels).forEach(p=>{p.classList.remove('open','workspace-open');}); document.getElementById('app')?.classList.remove('feature-mode'); document.body.classList.remove('workspace-mode'); navs.forEach(b=>b.classList.toggle('active',b.dataset.nav==='world')); }
+  function openPanel(name, context='menu'){ closePanels(); if(name==='tasks') taskContext=context; const panel=panels[name]; panel.classList.add('open','workspace-open'); document.getElementById('app')?.classList.add('feature-mode'); document.body.classList.add('workspace-mode'); navs.forEach(b=>b.classList.toggle('active',b.dataset.nav===name)); if(name==='tasks') renderTasks(); }
   navs.forEach(btn=>btn.addEventListener('click',()=> btn.dataset.nav==='world'?closePanels():openPanel(btn.dataset.nav)));
   document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closePanels));
-  $('quickTask').addEventListener('click',()=>openPanel('tasks','menu')); $('quickPet').addEventListener('click',()=>openPanel('pets'));
+  $('quickInteract').addEventListener('click',()=>game.interactNearest()); $('quickTask').addEventListener('click',()=>openPanel('tasks','menu')); $('quickPet').addEventListener('click',()=>openPanel('pets'));
 
   function renderTasks(){
     const list=$('taskList'); list.innerHTML='';
@@ -37,9 +40,32 @@ export function initUI(state, game){
       const actions=el.querySelector('.task-actions');
       if(t.status==='open'){
         const accept=document.createElement('button'); accept.className='primary'; accept.textContent=t.target==='我'?'接下來做':'接受';
-        accept.disabled=!boardMode;
+        accept.disabled=false;
         accept.title=boardMode?'':'請走到世界裡的委託板接受任務';
-        accept.onclick=()=>{ if(!boardMode){notify('📍 請先走到中央廣場的委託板。');return;} t.status='accepted'; t.acceptedAt=Date.now(); addJournal(state,'📜',`接受委託：${t.title}`,'在委託板接下這項生活冒險。'); saveState(state); refresh(); notify('任務已接下！完成後回到委託板回報。'); };
+        accept.onclick=async()=>{ if(!boardMode){notify('📍 請先走到中央廣場的委託板。');return;}
+          const acceptedAt=Date.now();
+          try{
+            const userId=multiplayer?.mp?.user?.id||null;
+            if(multiplayer?.mp?.connected && multiplayer.mp.guildId && userId){
+              const patch={
+                status:'accepted',
+                assignee_id:userId,
+                metadata:{...(t.remoteRow?.metadata||{}),difficulty:t.difficulty,localTarget:t.target,acceptedAt,acceptedBy:userId}
+              };
+              const row=await multiplayer.mp.updateTask(t.id,patch);
+              if(!row) throw new Error('任務沒有成功寫入共享資料');
+              t.remoteRow=row;
+              t.assigneeId=row.assignee_id||userId;
+              // 通知原發布者，讓另一台手機立即知道有人接下任務。
+              if(row.creator_id && row.creator_id!==userId){
+                await multiplayer.mp.sendNotification(row.creator_id,'📜 任務已被接受',`${state.player.name||'另一半'} 接下了「${t.title}」。`,'task');
+              }
+            }
+            t.status='accepted'; t.acceptedAt=acceptedAt; t.acceptedBy=userId;
+            t.assigneeId=userId;
+            addJournal(state,'📜',`接受委託：${t.title}`,'在委託板接下這項生活冒險。'); saveState(state); refresh(); notify('任務已接下！完成後回到委託板回報。');
+          }catch(e){notify('⚠️ 任務同步失敗：'+(e?.message||e));}
+        };
         actions.appendChild(accept);
       } else if(t.status==='accepted'){
         const done=document.createElement('button'); done.className='primary'; done.textContent=boardMode?'回報完成':'到委託板回報'; done.disabled=!boardMode; done.title=boardMode?'':'請回到中央廣場委託板回報'; done.onclick=()=>{ if(!boardMode){notify('📍 完成任務後，回到委託板才能領取獎勵。');return;} completeTask(t.id); };
@@ -51,17 +77,51 @@ export function initUI(state, game){
 
   function completeTask(id){
     const t=state.tasks.find(x=>x.id===id); if(!t||t.status==='completed'||t.status!=='accepted') return;
-    t.status='completed'; gainRewards(state,t.gold,t.xp); addJournal(state,'🎉',`委託完成：${t.title}`,`獲得 🪙 ${t.gold} 與 ⭐ ${t.xp} XP。`); saveState(state); refresh(); game.addFloater(state.player.x, state.player.y-65, `+${t.gold} Gold`); game.addFloater(state.player.x, state.player.y-92, `+${t.xp} XP`); notify(`🎉 任務完成！ +${t.gold} Gold / +${t.xp} XP`);
+    const completedAt=Date.now();
+    (async()=>{
+      try{
+        if(multiplayer?.mp?.connected && multiplayer.mp.guildId){
+          const row=await multiplayer.mp.updateTask(t.id,{status:'completed',completed_at:new Date(completedAt).toISOString(),assignee_id:t.assigneeId||multiplayer.mp.user.id,metadata:{...(t.remoteRow?.metadata||{}),difficulty:t.difficulty,localTarget:t.target,acceptedAt:t.acceptedAt||null,acceptedBy:t.acceptedBy||null,completedBy:multiplayer.mp.user.id}});
+          if(!row) throw new Error('任務完成狀態沒有成功同步');
+          t.remoteRow=row;
+          // 通知原發布者：任務已完成，另一台裝置的通知中心會即時收到。
+          const userId=multiplayer.mp.user.id;
+          if(row.creator_id && row.creator_id!==userId){
+            await multiplayer.mp.sendNotification(row.creator_id,'🎉 任務已完成',`${state.player.name||'另一半'} 已完成「${t.title}」，可以回來查看獎勵。`,'task');
+          }
+        }
+        t.status='completed'; t.completedAt=completedAt; t.completedBy=multiplayer?.mp?.user?.id||null;
+        gainRewards(state,t.gold,t.xp); addJournal(state,'🎉',`委託完成：${t.title}`,`獲得 🪙 ${t.gold} 與 ⭐ ${t.xp} XP。`); saveState(state); refresh(); game.addFloater(state.player.x, state.player.y-65, `+${t.gold} Gold`); game.addFloater(state.player.x, state.player.y-92, `+${t.xp} XP`); notify(`🎉 任務完成！ +${t.gold} Gold / +${t.xp} XP`);
+      }catch(e){notify('⚠️ 任務回報同步失敗：'+(e?.message||e));}
+    })();
   }
 
-  $('newTaskBtn').addEventListener('click',()=>{$('taskModal').classList.add('show'); $('taskTitle').focus();});
-  $('cancelTask').addEventListener('click',()=>$('taskModal').classList.remove('show'));
-  $('taskModal').addEventListener('click',e=>{if(e.target.id==='taskModal') $('taskModal').classList.remove('show');});
+  $('newTaskBtn').addEventListener('click',()=>{
+    $('taskModal').classList.add('show');
+    document.body.classList.add('workspace-modal-open');
+    $('taskTitle').focus();
+  });
+  const closeTaskComposer=()=>{ $('taskModal').classList.remove('show'); document.body.classList.remove('workspace-modal-open'); };
+  $('cancelTask').addEventListener('click',closeTaskComposer);
+  $('taskModal').addEventListener('click',e=>{if(e.target.id==='taskModal') closeTaskComposer();});
   $('taskForm').addEventListener('submit',e=>{
     e.preventDefault();
-    const target=$('taskTarget').value;
-    state.tasks.unshift({ id:'t'+Date.now(), title:$('taskTitle').value.trim(), desc:$('taskDesc').value.trim(), target:target==='self'?'我':'另一半', difficulty:Number($('taskDifficulty').value), gold:Number($('taskGold').value)||0, xp:Number($('taskXp').value)||0, status:'open' });
-    addJournal(state,'📝','發布了一份新委託',`「${$('taskTitle').value.trim()}」已放上公會委託板。`); saveState(state); $('taskModal').classList.remove('show'); e.target.reset(); refresh(); notify('📜 委託已發布！');
+    const target=$('taskTarget').value==='self'?'我':'另一半';
+    const draft={title:$('taskTitle').value.trim(),desc:$('taskDesc').value.trim(),target,difficulty:Number($('taskDifficulty').value),gold:Number($('taskGold').value)||0,xp:Number($('taskXp').value)||0};
+    (async()=>{
+      try{
+        if(multiplayer?.mp?.connected && multiplayer.mp.guildId){
+          const row=await multiplayer.mp.createTask(draft);
+          if(row){
+            draft.id=row.id; draft.creatorId=row.creator_id; draft.remote=true;
+            state.tasks.unshift({...draft,status:row.status||'open'});
+          }
+        }else{
+          state.tasks.unshift({id:'t'+Date.now(),...draft,status:'open'});
+        }
+        addJournal(state,'📝','發布了一份新委託',`「${draft.title}」已放上公會委託板。`); saveState(state); closeTaskComposer(); e.target.reset(); refresh(); notify('📜 委託已發布！');
+      }catch(err){notify('⚠️ 委託發布同步失敗：'+(err?.message||err));}
+    })();
   });
 
   function renderPets(){
@@ -128,7 +188,7 @@ export function initUI(state, game){
   petModal.querySelectorAll('[data-pet-action]').forEach(btn=>btn.onclick=()=>{ game.interactPet(selectedPet,btn.dataset.petAction); const cat=state.cats[selectedPet]; $('petModalMood').textContent=cat.mood; });
 
   refresh();
-  return { notify, refresh, openPanel };
+  return { notify, refresh, openPanel, setMultiplayer:mp=>{multiplayer=mp;} };
 }
 
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }

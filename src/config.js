@@ -1,0 +1,4 @@
+window.COUPLE_GUILD_CONFIG = window.COUPLE_GUILD_CONFIG || {
+  SUPABASE_URL: '',
+  SUPABASE_ANON_KEY: '',
+};

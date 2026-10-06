@@ -39,8 +39,27 @@ export class TownGame {
     this.resize(); window.addEventListener('resize',()=>this.resize());
     this.canvas.tabIndex=0; this.canvas.setAttribute('role','application');
     const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
-    const keyDown=e=>{ const code=e.code||'', key=(e.key||'').toLowerCase(); if(movement.has(code)){this.keys.add(code);this.keys.add(key);e.preventDefault();} if(code==='KeyE'||key==='e'){e.preventDefault();this.interactNearest();} };
-    const keyUp=e=>{this.keys.delete(e.code||'');this.keys.delete((e.key||'').toLowerCase());};
+    const isTextInput=el=>{
+      if(!el) return false;
+      if(el.isContentEditable) return true;
+      const tag=(el.tagName||'').toLowerCase();
+      if(tag==='textarea' || tag==='select') return true;
+      if(tag==='input'){
+        const type=(el.type||'text').toLowerCase();
+        return !['button','submit','reset','checkbox','radio','range','file','color','hidden'].includes(type);
+      }
+      return !!el.closest?.('input,textarea,select,[contenteditable="true"]');
+    };
+    const keyDown=e=>{
+      if(isTextInput(e.target)){ this.keys.clear(); return; }
+      const code=e.code||'', key=(e.key||'').toLowerCase();
+      if(movement.has(code)){this.keys.add(code);this.keys.add(key);e.preventDefault();}
+      if(code==='KeyE'||key==='e'){e.preventDefault();this.interactNearest();}
+    };
+    const keyUp=e=>{
+      this.keys.delete(e.code||'');
+      this.keys.delete((e.key||'').toLowerCase());
+    };
     document.addEventListener('keydown',keyDown,{capture:true}); document.addEventListener('keyup',keyUp,{capture:true}); window.addEventListener('blur',()=>this.keys.clear());
     this.canvas.addEventListener('pointerdown',e=>{this.canvas.focus(); this.pointerInteract(e);});
     requestAnimationFrame(t=>this.loop(t));
@@ -64,7 +83,7 @@ export class TownGame {
     if(moving){ if(Math.abs(x)>Math.abs(y))this.playerFacing=x<0?'left':'right'; else this.playerFacing=y<0?'up':'down'; this.walkFrame+=dt*9; this.movePlayer(x/len*PLAYER_SPEED*dt,y/len*PLAYER_SPEED*dt); }
     else this.walkFrame=0;
 
-    const q=this.state.partner,a=this.time/5200;q.x=SCENE_OX+755+Math.cos(a)*100;q.y=SCENE_OY+430+Math.sin(a*1.35)*70;
+    const q=this.state.partner;if(!q.remote){const a=this.time/5200;q.x=SCENE_OX+755+Math.cos(a)*100;q.y=SCENE_OY+430+Math.sin(a*1.35)*70;}
     if(this.time-this.lastPetBrain>1800){this.lastPetBrain=this.time;this.decideCat();}
     for(const cat of Object.values(this.state.cats))this.updateCat(cat,dt);
     this.updateNPCs(dt);
@@ -81,7 +100,7 @@ export class TownGame {
   collides(actor){const r=16;return OBSTACLES.some(o=>actor.x+r>o.x&&actor.x-r<o.x+o.w&&actor.y+r>o.y&&actor.y-r<o.y+o.h);}
   nearestInteractableAt(p){return INTERACTABLES.reduce((best,i)=>!best||dist(i,p)<dist(best,p)?i:best,null);}
   findNearestInteractable(){const p=this.state.player;let best=null,bestD=Infinity;for(const i of INTERACTABLES){const d=dist(i,p);if(d<INTERACT_RANGE&&d<bestD){best=i;bestD=d;}}return best;}
-  nearPlayer(cat){return dist(cat,this.state.player)<100||dist(cat,this.state.partner)<100;}
+  nearPlayer(cat){return [this.state.player,this.state.partner,...Object.values(this.state.remotePlayers||{})].some(p=>p&&dist(cat,p)<100);}
   interactNearest(){const target=this.findNearestInteractable();if(target)this.performInteraction(target);else {const cat=Object.values(this.state.cats).find(c=>this.nearPlayer(c));if(cat)this.cb.openPet(cat.id);else this.cb.notify('附近沒有可以互動的東西。');}}
   performInteraction(target){
     if(target.type==='board'){
@@ -117,13 +136,13 @@ export class TownGame {
     }
   }
 
-  decideCat(){const choices=[this.state.player,this.state.partner];for(const cat of Object.values(this.state.cats)){const personality=getPersonality(cat),r=Math.random();if(cat.energy<18){cat.state='sleep';cat.target=null;cat.animation='sleep';continue;}if(cat.hunger>75&&Math.random()<personality.hunger){cat.state='hungry';cat.target=choices[Math.random()<.5?0:1];cat.animation='walk';continue;}if(r<personality.approach){cat.target=choices[Math.random()<.55?0:1];cat.state='follow';cat.animation='walk';}else if(r<personality.approach+personality.wander){cat.target=null;cat.state='wander';cat.animation='walk';}else{cat.target=null;cat.state='idle';cat.animation='idle';}}}
+  decideCat(){const choices=[this.state.player,this.state.partner,...Object.values(this.state.remotePlayers||{})].filter(Boolean);for(const cat of Object.values(this.state.cats)){const personality=getPersonality(cat),r=Math.random();if(cat.energy<18){cat.state='sleep';cat.target=null;cat.animation='sleep';continue;}if(cat.hunger>75&&Math.random()<personality.hunger){cat.state='hungry';cat.target=choices[Math.floor(Math.random()*choices.length)];cat.animation='walk';continue;}if(r<personality.approach){cat.target=choices[Math.floor(Math.random()*choices.length)];cat.state='follow';cat.animation='walk';}else if(r<personality.approach+personality.wander){cat.target=null;cat.state='wander';cat.animation='walk';}else{cat.target=null;cat.state='idle';cat.animation='idle';}}}
   updateCat(cat,dt){const speed=cat.state==='sleep'?0:cat.state==='follow'||cat.state==='hungry'?58:34;if(cat.state==='follow'||cat.state==='hungry'){const t=cat.target;if(t){const dx=t.x-cat.x,dy=t.y-cat.y,d=Math.hypot(dx,dy);if(d>58){cat.x+=dx/d*speed*dt;cat.y+=dy/d*speed*dt;}else if(Math.random()<.0025){this.cb.notify(cat.state==='hungry'?`${cat.name}：喵～ 想吃飯了。`:`${cat.name}跑到你身邊撒嬌。`);addPetEvent(this.state,`${cat.name}跑去找人撒嬌。`);}}}else if(cat.state==='wander'){cat.animation='walk';cat.x+=Math.cos(this.time/1700+cat.id.length)*speed*.35*dt;cat.y+=Math.sin(this.time/2100+cat.id.length*2)*speed*.35*dt;}if(cat.state==='sleep')cat.animation='sleep';
     cat.x=clamp(cat.x,100,WORLD_W-100);cat.y=clamp(cat.y,190,WORLD_H-150);cat.hunger=clamp(cat.hunger+dt*.25,0,100);cat.energy=clamp(cat.energy+(cat.state==='sleep'?dt*2:-dt*.15),10,100);}
 
   interactPet(id,action){const cat=this.state.cats[id];if(!cat)return;if(!this.nearPlayer(cat)){this.cb.notify(`${cat.name}跑太遠了，靠近一點再互動。`);return;}if(action==='feed'){if(this.state.food<=0){this.cb.notify('貓罐頭吃完啦，先去商店補貨。');return;}this.state.food--;cat.hunger=clamp(cat.hunger-40,0,100);cat.energy=clamp(cat.energy+8,0,100);cat.state='idle';addPetEvent(this.state,`${cat.name}吃飽了，開始舔毛。`);addJournal(this.state,'🍖',`${cat.name}吃飯`,`你餵了${cat.name}一份罐頭。`);this.cb.notify(`${cat.name}：呼嚕呼嚕…… 🍖`);this.addFloater(cat.x,cat.y-55,'🍖 好吃！');}if(action==='play'){cat.energy=clamp(cat.energy-10,0,100);cat.hunger=clamp(cat.hunger+8,0,100);cat.state='wander';if(Math.random()<.1){addPetEvent(this.state,`${cat.name}玩到一半突然不玩了。`);this.cb.notify(`${cat.name}突然走掉了 XD`);}else{addPetEvent(this.state,`${cat.name}今天玩得很開心。`);addJournal(this.state,'🎾',`${cat.name}玩耍`,`陪${cat.name}玩了一下。`);this.cb.notify(`${cat.name}開心地追著玩具跑！`);this.addFloater(cat.x,cat.y-55,'🎾 好好玩！');}}if(action==='pet'){const bite=Math.random()<getPersonality(cat).bite;if(bite){cat.mood='今天不想被摸';addPetEvent(this.state,`🦷 ${cat.name}突然咬了一口 XD`);addJournal(this.state,'🦷',`${cat.name}咬人`,`剛剛明明還在呼嚕，結果突然咬了一口。`);this.cb.notify(`🦷 ${cat.name}：「喀。」突然咬了一口 XD`);this.addFloater(cat.x,cat.y-55,'🦷 喀！');}else{cat.mood='正在呼嚕';addPetEvent(this.state,`${cat.name}被摸得很開心。`);this.cb.notify(`${cat.name}：呼嚕呼嚕 ❤️`);this.addFloater(cat.x,cat.y-55,'❤️ 呼嚕');}}saveState(this.state);this.cb.refresh();}
 
-  draw(){const c=this.ctx;c.setTransform(this.scaleX,0,0,this.scaleY,0,0);c.clearRect(0,0,W,H);c.save();c.translate(-this.camera.x,-this.camera.y);this.drawWorld(c);this.drawCharacter(c,this.state.partner,true);this.drawCharacter(c,this.state.player,false);for(const cat of Object.values(this.state.cats))this.drawCat(c,cat);this.drawNPCs(c);this.drawInteractionMarker(c);this.drawFloaters(c);c.restore();}
+  draw(){const c=this.ctx;c.setTransform(this.scaleX,0,0,this.scaleY,0,0);c.clearRect(0,0,W,H);c.save();c.translate(-this.camera.x,-this.camera.y);this.drawWorld(c);for(const rp of Object.values(this.state.remotePlayers||{})){if(rp?.remote)this.drawCharacter(c,rp,true);}if(this.state.partner?.remote && !(this.state.remotePlayers&&Object.keys(this.state.remotePlayers).length))this.drawCharacter(c,this.state.partner,true);this.drawCharacter(c,this.state.player,false);for(const cat of Object.values(this.state.cats))this.drawCat(c,cat);this.drawNPCs(c);this.drawInteractionMarker(c);this.drawFloaters(c);c.restore();}
   drawWorld(c){c.fillStyle='#b8d1b7';c.fillRect(0,0,WORLD_W,WORLD_H);for(let y=0;y<WORLD_H;y+=40)for(let x=0;x<WORLD_W;x+=40){c.fillStyle=((x/40+y/40)%2?'#b6ceb5':'#c1d7be');c.fillRect(x,y,40,40);}c.fillStyle='#92bcb7';c.fillRect(0,330,820,WORLD_H-660);c.fillStyle='#a6c6ae';c.fillRect(2780,180,WORLD_W-2780,WORLD_H-360);c.fillStyle='#d3c39f';c.fillRect(1340,0,150,WORLD_H);c.fillStyle='#d8c8a8';c.fillRect(0,1120,WORLD_W,120);c.save();c.translate(SCENE_OX,SCENE_OY);c.fillStyle='#96c4c2';c.fillRect(-920,-620,1840,70);c.fillStyle='#a8d2cf';for(let x=-920;x<920;x+=36)c.fillRect(x,-590,22,3);c.fillStyle='#e6d8bb';c.beginPath();c.ellipse(660,430,430,235,0,0,Math.PI*2);c.fill();c.strokeStyle='rgba(113,95,61,.28)';c.lineWidth=4;c.stroke();c.fillStyle='#d9c9a8';c.fillRect(610,215,100,215);c.fillRect(220,385,900,90);this.drawHouse(c,160,95,285,135,'公會之家','#7a8fb1');this.drawHouse(c,850,90,265,130,'雜貨商店','#ce9e63');this.drawBoard(c,500,185);this.drawPlot(c,480,80,280,78);this.drawPlot(c,1120,270,100,130);for(const [x,y] of [[90,270],[1160,250],[230,575],[1020,570]])this.drawLamp(c,x,y);for(const [x,y] of [[180,505],[1080,490]])this.drawBench(c,x,y);for(const [x,y,s] of [[60,100,1.1],[1140,110,.9],[80,620,.85],[1200,620,1.15],[350,250,.65],[945,500,.6]])this.drawTree(c,x,y,s);c.fillStyle='#aac0bb';c.beginPath();c.arc(660,430,48,0,Math.PI*2);c.fill();c.fillStyle='#84b3b1';c.beginPath();c.arc(660,430,35,0,Math.PI*2);c.fill();c.fillStyle='#fff0c2';c.beginPath();c.arc(660,430,7,0,Math.PI*2);c.fill();c.fillStyle='#5c5a4b';c.font='700 16px ui-rounded,system-ui';c.textAlign='center';c.fillText('星光旅團中央廣場',660,115);c.restore();for(const [x,y,s] of [[260,520,1.3],[520,1520,1.1],[2920,520,1.0],[3100,1650,1.35],[800,1980,1.2],[2500,2050,1.0],[100,1900,.9]])this.drawTree(c,x,y,s);this.drawHouse(c,110,980,230,120,'河畔小屋','#8c9aa6');this.drawHouse(c,2940,820,240,125,'旅行者之家','#b48768');this.drawBoard(c,2600,1360);}
   drawHouse(c,x,y,w,h,label,roof){c.fillStyle='#f5ecd8';c.fillRect(x,y,w,h);c.fillStyle=roof;c.beginPath();c.moveTo(x-12,y);c.lineTo(x+w/2,y-72);c.lineTo(x+w+12,y);c.closePath();c.fill();c.fillStyle='#8d6e5a';c.fillRect(x+w/2-24,y+70,48,60);c.fillStyle='#9fc8c5';c.fillRect(x+28,y+45,48,38);c.fillRect(x+w-76,y+45,48,38);c.fillStyle='#5f6b62';c.font='700 13px ui-rounded,system-ui';c.textAlign='center';c.fillText(label,x+w/2,y+h+22);}
   drawBoard(c,x,y){c.fillStyle='#7a5639';c.fillRect(x,y,190,76);c.fillStyle='#c39b67';c.fillRect(x+12,y+10,166,52);c.strokeStyle='#6b4b32';c.strokeRect(x+12,y+10,166,52);c.fillStyle='#fff1cb';c.font='700 15px ui-rounded,system-ui';c.textAlign='center';c.fillText('📜 公會委託板',x+95,y+42);c.fillStyle='#6b4b32';c.fillRect(x+95,y+76,8,45);}

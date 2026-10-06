@@ -1,6 +1,7 @@
 import { loadState } from './state.js';
 import { TownGame } from './game.js';
 import { initUI } from './ui.js';
+import { initMultiplayer } from './mp-ui.js';
 
 const state = loadState();
 const canvas=document.getElementById('game');
@@ -14,6 +15,21 @@ const callbacks={
 };
 const game=new TownGame(canvas,state,callbacks);
 ui=initUI(state,game);
+const multiplayer=initMultiplayer(state,game,ui);
+ui.setMultiplayer?.(multiplayer);
+let lastSentX=null,lastSentY=null,lastSentAt=0;
+setInterval(async()=>{
+  const mp=multiplayer?.mp;
+  if(!mp?.connected||!mp.guildId)return;
+  const x=Math.round(state.player.x),y=Math.round(state.player.y),now=Date.now();
+  if(x===lastSentX&&y===lastSentY&&now-lastSentAt<2000)return;
+  try{
+    await mp.trackPlayer(state.player);
+    lastSentX=x; lastSentY=y; lastSentAt=now;
+  }catch(e){
+    ui?.notify?.('⚠️ 玩家位置同步失敗：'+(e?.message||e));
+  }
+},500);
 
 // Touch joystick
 const joystick=document.getElementById('joystick');

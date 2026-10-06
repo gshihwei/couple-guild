@@ -1,0 +1,108 @@
+-- Couple Guild V0.3.0 -> V0.3.8
+create extension if not exists pgcrypto;
+create table if not exists public.guilds(id uuid primary key default gen_random_uuid(), name text not null, owner_id uuid not null, created_at timestamptz default now());
+create table if not exists public.guild_members(guild_id uuid references public.guilds(id) on delete cascade, user_id uuid not null, role text not null check(role in('owner','member')), display_name text not null, created_at timestamptz default now(), primary key(guild_id,user_id));
+create table if not exists public.guild_invites(id uuid primary key default gen_random_uuid(), guild_id uuid references public.guilds(id) on delete cascade, code text unique not null, created_by uuid not null, expires_at timestamptz default (now()+interval '7 days'), created_at timestamptz default now());
+create table if not exists public.tasks(id uuid primary key default gen_random_uuid(), guild_id uuid references public.guilds(id) on delete cascade, title text not null, description text default '', creator_id uuid not null, assignee_type text not null default 'partner', assignee_id uuid, gold integer not null default 0, xp integer not null default 0, status text not null default 'open', metadata jsonb not null default '{}', created_at timestamptz default now(), completed_at timestamptz);
+create table if not exists public.couple_rewards(id uuid primary key default gen_random_uuid(), guild_id uuid references public.guilds(id) on delete cascade, created_by uuid not null, title text not null, description text default '', cost integer not null default 0, kind text not null default 'voucher', status text not null default 'available', redeemed_by uuid, redeemed_at timestamptz, created_at timestamptz default now());
+create table if not exists public.notifications(id uuid primary key default gen_random_uuid(), guild_id uuid references public.guilds(id) on delete cascade, user_id uuid not null, title text not null, body text not null, type text not null default 'info', read_at timestamptz, created_at timestamptz default now());
+create table if not exists public.guild_events(id uuid primary key default gen_random_uuid(), guild_id uuid references public.guilds(id) on delete cascade, user_id uuid not null, type text not null, payload jsonb not null default '{}', idempotency_key text unique, created_at timestamptz default now());
+create table if not exists public.player_states(guild_id uuid references public.guilds(id) on delete cascade, user_id uuid not null, x numeric not null default 0, y numeric not null default 0, display_name text not null default '玩家', updated_at timestamptz default now(), primary key(guild_id,user_id));
+create table if not exists public.guild_home(id uuid primary key default gen_random_uuid(), guild_id uuid unique references public.guilds(id) on delete cascade, state jsonb not null default '{}', updated_at timestamptz default now());
+create or replace function public.is_guild_member(p_guild uuid) returns boolean language sql stable security definer set search_path=public as $$ select exists(select 1 from guild_members where guild_id=p_guild and user_id=auth.uid()); $$;
+alter table public.guilds enable row level security; alter table public.guild_members enable row level security; alter table public.guild_invites enable row level security; alter table public.tasks enable row level security; alter table public.couple_rewards enable row level security; alter table public.notifications enable row level security; alter table public.guild_events enable row level security; alter table public.guild_home enable row level security; alter table public.player_states enable row level security;
+create policy guild_member_read on public.guilds for select using (is_guild_member(id));
+create policy guild_owner_insert on public.guilds for insert with check (owner_id=auth.uid());
+create policy guild_member_manage on public.guild_members for all using (user_id=auth.uid() or is_guild_member(guild_id)) with check (user_id=auth.uid() or is_guild_member(guild_id));
+create policy invites_member on public.guild_invites for all using (is_guild_member(guild_id) or created_by=auth.uid()) with check (is_guild_member(guild_id) or created_by=auth.uid());
+create or replace function public.join_guild_by_invite(p_code text,p_display_name text) returns uuid language plpgsql security definer set search_path=public as $$ declare g uuid; begin select guild_id into g from guild_invites where code=upper(trim(p_code)) and (expires_at is null or expires_at>now()) limit 1; if g is null then raise exception 'invite_not_found'; end if; insert into guild_members(guild_id,user_id,role,display_name) values(g,auth.uid(),'member',coalesce(nullif(trim(p_display_name),''),'另一半')) on conflict(guild_id,user_id) do update set display_name=excluded.display_name; return g; end; $$;
+create policy tasks_member on public.tasks for all using (is_guild_member(guild_id)) with check (is_guild_member(guild_id));
+create policy rewards_member on public.couple_rewards for all using (is_guild_member(guild_id)) with check (is_guild_member(guild_id));
+create policy notifications_owner on public.notifications for select using (user_id=auth.uid());
+create policy notifications_insert_member on public.notifications for insert with check (is_guild_member(guild_id));
+create policy notifications_update_owner on public.notifications for update using (user_id=auth.uid());
+create policy events_member on public.guild_events for all using (is_guild_member(guild_id)) with check (is_guild_member(guild_id));
+create policy home_member on public.guild_home for all using (is_guild_member(guild_id)) with check (is_guild_member(guild_id));
+create policy player_state_member on public.player_states for all using (is_guild_member(guild_id)) with check (is_guild_member(guild_id));
+create or replace function public.redeem_couple_reward(p_reward_id uuid,p_user_id uuid) returns public.couple_rewards language plpgsql security definer set search_path=public as $$ declare r couple_rewards; begin select * into r from couple_rewards where id=p_reward_id for update; if r.id is null or p_user_id<>auth.uid() or not is_guild_member(r.guild_id) then raise exception 'reward_not_found'; end if; if r.status<>'available' then raise exception 'reward_unavailable'; end if; update couple_rewards set status='redeemed',redeemed_by=p_user_id,redeemed_at=now() where id=p_reward_id returning * into r; return r; end; $$;
+alter publication supabase_realtime add table public.guild_members,public.tasks,public.notifications,public.couple_rewards,public.guild_events,public.guild_home,public.player_states;
+-- Couple Guild V0.3.8 migration
+-- Run this once in Supabase SQL Editor after the existing supabase-schema.sql.
+
+create or replace function public.update_my_display_name(p_display_name text)
+returns public.guild_members
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare r public.guild_members;
+begin
+  if auth.uid() is null then raise exception 'not_authenticated'; end if;
+  update public.guild_members
+     set display_name=coalesce(nullif(trim(p_display_name),''),'玩家')
+   where user_id=auth.uid()
+   returning * into r;
+  if r is null then raise exception 'not_in_guild'; end if;
+  return r;
+end;
+$$;
+
+grant execute on function public.update_my_display_name(text) to authenticated, anon;
+
+create or replace function public.update_guild_name(p_name text)
+returns public.guilds
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare r public.guilds;
+begin
+  if auth.uid() is null then raise exception 'not_authenticated'; end if;
+  update public.guilds g
+     set name=coalesce(nullif(trim(p_name),''),'星光旅團')
+   where g.id in (
+     select gm.guild_id from public.guild_members gm
+      where gm.user_id=auth.uid() and gm.role='owner'
+   )
+   returning * into r;
+  if r is null then raise exception 'owner_only'; end if;
+  return r;
+end;
+$$;
+
+grant execute on function public.update_guild_name(text) to authenticated, anon;
+
+create or replace function public.leave_guild()
+returns uuid
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare g uuid;
+begin
+  if auth.uid() is null then raise exception 'not_authenticated'; end if;
+  select guild_id into g from public.guild_members where user_id=auth.uid() order by created_at desc limit 1;
+  if g is null then raise exception 'not_in_guild'; end if;
+  if exists(select 1 from public.guild_members where guild_id=g and user_id=auth.uid() and role='owner') then
+    raise exception 'owner_cannot_leave';
+  end if;
+  delete from public.guild_members where guild_id=g and user_id=auth.uid();
+  return g;
+end;
+$$;
+
+grant execute on function public.leave_guild() to authenticated, anon;
+
+-- V0.3.8: guilds name changes must be visible through Supabase Realtime.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+     where pubname='supabase_realtime'
+       and schemaname='public'
+       and tablename='guilds'
+  ) then
+    alter publication supabase_realtime add table public.guilds;
+  end if;
+end
+$$;

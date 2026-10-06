@@ -33,6 +33,21 @@
     .nav-btn.active { background:#315746; color:#fffaf0; }
     .nav-icon { font-size:20px; line-height:1; }
     .panel { position:absolute; left:auto; right:max(16px, env(safe-area-inset-right)); top:88px; bottom:88px; width:min(620px,calc(100vw - 32px)); border-radius:24px; padding:16px; overflow:auto; z-index:20; transform:translateY(16px); opacity:0; pointer-events:none; transition:.2s ease; }
+    /* Feature workspace: entering a feature always replaces the town surface. */
+    #app.feature-mode #game,
+    #app.feature-mode .hud,
+    #app.feature-mode .bottom-nav,
+    #app.feature-mode .touch-controls,
+    #app.feature-mode .desktop-tip,
+    #app.feature-mode .toast { visibility:hidden; pointer-events:none; }
+    body.workspace-mode #game,
+    body.workspace-mode #app > .hud,
+    body.workspace-mode #app > .bottom-nav,
+    body.workspace-mode #app > .touch-controls,
+    body.workspace-mode #app > .desktop-tip,
+    body.workspace-mode #app > .toast { visibility:hidden !important; pointer-events:none !important; }
+    #app.feature-mode .panel.open,
+    .panel.workspace-open { position:fixed !important; inset:0 !important; left:0 !important; right:0 !important; top:0 !important; bottom:0 !important; width:100vw !important; height:100dvh !important; max-width:none !important; max-height:none !important; margin:0 !important; border-radius:0 !important; padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left)) !important; transform:none !important; opacity:1 !important; z-index:200 !important; overflow:auto !important; pointer-events:auto !important; }
     .panel.open { transform:none; opacity:1; pointer-events:auto; }
     .panel-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
     .panel-head h2 { margin:0; font-size:20px; }
@@ -66,9 +81,19 @@
     .journal-emoji { width:54px; height:54px; border-radius:16px; background:#e7efea; display:grid; place-items:center; font-size:28px; }
     .journal-item b { font-size:13px; }
     .journal-item p { margin:4px 0 0; font-size:12px; color:#696e67; line-height:1.5; }
-    .modal-backdrop { position:absolute; inset:0; background:rgba(12,20,17,.42); z-index:50; display:none; align-items:flex-end; justify-content:center; }
+    .modal-backdrop { position:absolute; inset:0; background:rgba(12,20,17,.42); z-index:300; display:none; align-items:flex-end; justify-content:center; }
     .modal-backdrop.show { display:flex; }
+    body.workspace-modal-open #app > #game, body.workspace-modal-open #app > .hud, body.workspace-modal-open #app > .touch-controls, body.workspace-modal-open #app > .bottom-nav, body.workspace-modal-open #app > .panel { visibility:hidden; pointer-events:none; }
+    body.workspace-modal-open .modal-backdrop.show { position:fixed; inset:0; z-index:500; background:rgba(12,20,17,.72); align-items:stretch; }
+    body.workspace-modal-open .modal-backdrop.show .modal { width:100vw; max-width:none; max-height:none; height:100dvh; border-radius:0; padding:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left)); overflow:auto; }
     .modal { width:min(100%,620px); max-height:92dvh; overflow:auto; border-radius:26px 26px 0 0; background:#fff9ea; padding:18px; box-shadow:0 -16px 40px rgba(0,0,0,.25); }
+    /* Touch devices use full-screen feature workspaces instead of covering the town with a small modal. */
+    @media (hover: none) and (pointer: coarse) {
+      .modal-backdrop { align-items:stretch; justify-content:stretch; }
+      .modal { width:100vw; height:100dvh; max-height:none; border-radius:0; padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left)); box-shadow:none; }
+      .modal h3 { font-size:24px; }
+      .modal-actions { position:sticky; bottom:0; padding-top:12px; padding-bottom:env(safe-area-inset-bottom); background:linear-gradient(transparent,#fff9ea 24%); }
+    }
     .modal h3 { margin:0 0 12px; font-size:21px; }
     label { display:block; font-size:12px; color:#6d7068; margin:10px 0 6px; }
     input, textarea, select { width:100%; border:1px solid #d8c8a2; background:#fffdf5; border-radius:13px; padding:10px 11px; color:var(--ink); outline:none; }
@@ -99,7 +124,7 @@
       .modal { border-radius:26px; max-height:88dvh; }
     }
 
-    @media (min-width: 900px) and (orientation: landscape) {
+    @media (min-width: 900px) and (orientation: landscape) and (hover: hover) and (pointer: fine) {
       .touch-controls { display:none; }
       .desktop-tip { display:block; }
       .bottom-nav { width:560px; }
@@ -155,7 +180,7 @@
 
     <div class="hud">
       <div class="guild-card glass">
-        <div class="guild-title">🏰 星光旅團 · Lv.<span id="guildLevel">3</span></div>
+        <div class="guild-title">🏰 <span id="guildTitle">星光旅團</span> · Lv.<span id="guildLevel">3</span></div>
         <div class="guild-sub" id="guildStatus">今天也一起冒險吧</div>
       </div>
       <div class="stats glass">
@@ -171,6 +196,7 @@
     <div class="touch-controls">
       <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>
       <div class="quick-actions">
+        <button class="quick-btn" id="quickInteract" title="互動">✋</button>
         <button class="quick-btn" id="quickTask" title="任務">📜</button>
         <button class="quick-btn" id="quickPet" title="寵物">🐾</button>
       </div>
@@ -284,6 +310,7 @@
       </div>
     </div>
   </div>
+  <script src="/config.js"></script>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
