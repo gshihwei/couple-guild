@@ -12,3 +12,9 @@ services:
       - path: /manifest.webmanifest
         name: Cache-Control
         value: no-cache
+
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false

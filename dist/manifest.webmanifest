@@ -1,0 +1,14 @@
+{
+  "name": "Couple Guild · 雙人公會",
+  "short_name": "雙人公會",
+  "description": "把兩個人的日常變成共同冒險。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#20352d",
+  "theme_color": "#20352d",
+  "lang": "zh-Hant",
+  "orientation": "landscape",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
