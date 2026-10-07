@@ -18,29 +18,55 @@
     #app { position:relative; width:100vw; height:100dvh; overflow:hidden; background:#20352d; }
     #game { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
     .glass { background:rgba(255,250,237,.94); border:1px solid rgba(92,73,42,.16); box-shadow:0 12px 36px rgba(20,31,25,.18); backdrop-filter:blur(10px); }
-    .hud { position:absolute; left:max(16px, env(safe-area-inset-left)); right:max(16px, env(safe-area-inset-right)); top:max(12px, env(safe-area-inset-top)); display:flex; gap:10px; align-items:stretch; pointer-events:none; z-index:10; }
-    .guild-card { flex:1; min-width:240px; padding:10px 12px; border-radius:18px; }
-    .guild-title { font-weight:800; font-size:15px; }
-    .guild-sub { font-size:11px; opacity:.67; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .stats { display:flex; gap:7px; }
-    .stat { min-width:66px; padding:8px 10px; border-radius:16px; text-align:center; }
-    .stat b { display:block; font-size:15px; }
-    .stat span { font-size:10px; opacity:.62; }
-    .toast { position:absolute; left:50%; top:78px; transform:translateX(-50%) translateY(-10px); opacity:0; transition:.25s ease; padding:9px 14px; border-radius:999px; color:#fff; background:rgba(34,51,44,.92); font-size:13px; font-weight:700; pointer-events:none; white-space:nowrap; z-index:30; }
+    .hud { position:absolute; left:max(14px,env(safe-area-inset-left)); right:max(14px,env(safe-area-inset-right)); top:max(12px,env(safe-area-inset-top)); display:flex; gap:10px; align-items:flex-start; pointer-events:none; z-index:10; }
+    .glass { background:rgba(255,250,237,.92); border:1px solid rgba(92,73,42,.16); box-shadow:0 10px 30px rgba(20,31,25,.18), inset 0 1px 0 rgba(255,255,255,.5); backdrop-filter:blur(10px); }
+    .rpg-profile { width:min(360px,42vw); min-width:270px; padding:9px 11px; border-radius:18px; display:flex; gap:9px; align-items:center; }
+    .profile-avatar { width:42px; height:42px; flex:0 0 42px; border-radius:13px; display:grid; place-items:center; background:linear-gradient(145deg,#6d927b,#365c4a); color:#fff8e8; font-size:20px; font-weight:900; box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 10px rgba(35,55,45,.18); }
+    .profile-copy { min-width:0; flex:1; }
+    .profile-top { display:flex; align-items:center; gap:7px; min-width:0; }
+    .profile-name { font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .level-badge { padding:3px 7px; border-radius:999px; background:#315746; color:#fff9ea; font-size:9px; font-weight:900; white-space:nowrap; }
+    .guild-title { font-weight:800; font-size:10px; opacity:.72; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .xp-track { height:5px; margin-top:6px; border-radius:999px; background:#e4d9bc; overflow:hidden; }
+    .xp-fill { width:0%; height:100%; border-radius:999px; background:linear-gradient(90deg,#d59a58,#e8b96f); transition:width .35s ease; }
+    .resource-bar { margin-left:auto; display:flex; gap:5px; padding:6px; border-radius:18px; }
+    .stat { min-width:68px; padding:7px 9px; border-radius:13px; text-align:center; background:rgba(255,255,255,.38); }
+    .stat b { display:block; font-size:14px; line-height:1.1; }
+    .stat span { font-size:9px; opacity:.62; }
+    .hud-quest { position:absolute; right:max(14px,env(safe-area-inset-right)); top:82px; width:min(310px,30vw); min-width:210px; padding:8px 11px; border-radius:15px; z-index:9; pointer-events:none; }
+    .quest-kicker { font-size:9px; font-weight:900; color:#8b641e; letter-spacing:.06em; }
+    .quest-title { margin-top:2px; font-size:12px; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .quest-meta { margin-top:3px; font-size:9px; color:#6b716b; }
+    .connection-dot { display:inline-block; width:6px; height:6px; margin-right:4px; border-radius:50%; background:#9c9d92; vertical-align:1px; }
+    .connection-dot.online { background:#4e9b6e; box-shadow:0 0 0 3px rgba(78,155,110,.13); }
+    .interaction-hud { position:absolute; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); transform:translate(-50%,8px); opacity:0; padding:7px 12px; border-radius:999px; background:rgba(31,47,40,.9); color:#fff9ea; font-size:11px; font-weight:900; box-shadow:0 7px 20px rgba(0,0,0,.18); pointer-events:none; transition:.18s ease; z-index:14; white-space:nowrap; }
+    .interaction-hud.show { opacity:1; transform:translate(-50%,0); }
+    .toast { position:absolute; left:50%; top:74px; transform:translateX(-50%) translateY(-10px); opacity:0; transition:.25s ease; padding:9px 14px; border-radius:999px; color:#fff; background:rgba(34,51,44,.92); font-size:13px; font-weight:700; pointer-events:none; white-space:nowrap; z-index:30; }
     .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-    .bottom-nav { position:absolute; left:50%; right:auto; width:min(620px,calc(100vw - 32px)); transform:translateX(-50%); bottom:max(12px, env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(5,1fr); gap:6px; padding:7px; border-radius:20px; z-index:18; }
-    .nav-btn { background:transparent; color:#53645b; padding:7px 4px; border-radius:14px; font-size:11px; display:flex; flex-direction:column; align-items:center; gap:3px; }
-    .nav-btn.active { background:#315746; color:#fffaf0; }
-    .nav-icon { font-size:20px; line-height:1; }
+    .bottom-nav { position:absolute; left:50%; right:auto; width:min(600px,calc(100vw - 32px)); transform:translateX(-50%); bottom:max(10px,env(safe-area-inset-bottom)); display:grid; grid-template-columns:repeat(5,1fr); gap:4px; padding:6px; border-radius:18px; z-index:18; }
+    .nav-btn { background:transparent; color:#53645b; padding:6px 4px; border-radius:13px; font-size:10px; font-weight:800; display:flex; flex-direction:column; align-items:center; gap:3px; transition:.15s ease; }
+    .nav-btn.active { background:#315746; color:#fffaf0; box-shadow:0 4px 12px rgba(49,87,70,.2); }
+    .nav-icon { font-size:19px; line-height:1; filter:drop-shadow(0 1px 0 rgba(255,255,255,.4)); }
     .panel { position:absolute; left:auto; right:max(16px, env(safe-area-inset-right)); top:88px; bottom:88px; width:min(620px,calc(100vw - 32px)); border-radius:24px; padding:16px; overflow:auto; z-index:20; transform:translateY(16px); opacity:0; pointer-events:none; transition:.2s ease; }
     /* Feature workspace: entering a feature always replaces the town surface. */
     #app.feature-mode #game,
     #app.feature-mode .hud,
+    #app.feature-mode .hud-quest,
+    #app.feature-mode .interaction-hud,
     #app.feature-mode .bottom-nav,
     #app.feature-mode .touch-controls,
     #app.feature-mode .desktop-tip,
     #app.feature-mode .toast { visibility:hidden; pointer-events:none; }
-    #app.feature-mode .panel.open { position:fixed; inset:0; width:100vw; height:100dvh; max-height:none; margin:0; border-radius:0; padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left)); transform:none; opacity:1; z-index:200; overflow:auto; pointer-events:auto; }
+    body.workspace-mode #game,
+    body.workspace-mode #app > .hud,
+    body.workspace-mode #app > .hud-quest,
+    body.workspace-mode #app > .interaction-hud,
+    body.workspace-mode #app > .bottom-nav,
+    body.workspace-mode #app > .touch-controls,
+    body.workspace-mode #app > .desktop-tip,
+    body.workspace-mode #app > .toast { visibility:hidden !important; pointer-events:none !important; }
+    #app.feature-mode .panel.open,
+    .panel.workspace-open { position:fixed !important; inset:0 !important; left:0 !important; right:0 !important; top:0 !important; bottom:0 !important; width:100vw !important; height:100dvh !important; max-width:none !important; max-height:none !important; margin:0 !important; border-radius:0 !important; padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left)) !important; transform:none !important; opacity:1 !important; z-index:200 !important; overflow:auto !important; pointer-events:auto !important; }
     .panel.open { transform:none; opacity:1; pointer-events:auto; }
     .panel-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
     .panel-head h2 { margin:0; font-size:20px; }
@@ -74,8 +100,11 @@
     .journal-emoji { width:54px; height:54px; border-radius:16px; background:#e7efea; display:grid; place-items:center; font-size:28px; }
     .journal-item b { font-size:13px; }
     .journal-item p { margin:4px 0 0; font-size:12px; color:#696e67; line-height:1.5; }
-    .modal-backdrop { position:absolute; inset:0; background:rgba(12,20,17,.42); z-index:50; display:none; align-items:flex-end; justify-content:center; }
+    .modal-backdrop { position:absolute; inset:0; background:rgba(12,20,17,.42); z-index:300; display:none; align-items:flex-end; justify-content:center; }
     .modal-backdrop.show { display:flex; }
+    body.workspace-modal-open #app > #game, body.workspace-modal-open #app > .hud, body.workspace-modal-open #app > .hud-quest, body.workspace-modal-open #app > .interaction-hud, body.workspace-modal-open #app > .touch-controls, body.workspace-modal-open #app > .bottom-nav, body.workspace-modal-open #app > .panel { visibility:hidden; pointer-events:none; }
+    body.workspace-modal-open .modal-backdrop.show { position:fixed; inset:0; z-index:500; background:rgba(12,20,17,.72); align-items:stretch; }
+    body.workspace-modal-open .modal-backdrop.show .modal { width:100vw; max-width:none; max-height:none; height:100dvh; border-radius:0; padding:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left)); overflow:auto; }
     .modal { width:min(100%,620px); max-height:92dvh; overflow:auto; border-radius:26px 26px 0 0; background:#fff9ea; padding:18px; box-shadow:0 -16px 40px rgba(0,0,0,.25); }
     /* Touch devices use full-screen feature workspaces instead of covering the town with a small modal. */
     @media (hover: none) and (pointer: coarse) {
@@ -107,8 +136,8 @@
     @media (orientation: landscape) {
       #app { max-width: 1440px; }
       .hud { align-items:flex-start; }
-      .guild-card { flex:0 1 430px; }
-      .stats { margin-left:auto; }
+      .rpg-profile { flex:0 1 420px; }
+      .resource-bar { margin-left:auto; }
       .touch-controls { display:flex; }
       .modal-backdrop { align-items:center; }
       .modal { border-radius:26px; max-height:88dvh; }
@@ -128,13 +157,19 @@
     }
 
     @media (max-width: 760px) and (orientation: landscape) {
-      .hud { left:10px; right:10px; top:max(8px,env(safe-area-inset-top)); }
-      .guild-card { min-width:0; padding:8px 10px; }
-      .guild-title { font-size:14px; }
-      .guild-sub { font-size:10px; }
-      .stat { min-width:60px; padding:7px 8px; }
-      .stat b { font-size:13px; }
-      .stat span { font-size:9px; }
+      .hud { left:8px; right:8px; top:max(8px,env(safe-area-inset-top)); }
+      .rpg-profile { min-width:0; width:min(300px,54vw); padding:7px 8px; }
+      .profile-avatar { width:36px; height:36px; flex-basis:36px; font-size:17px; }
+      .profile-name { font-size:12px; }
+      .guild-title { font-size:9px; }
+      .resource-bar { gap:3px; padding:5px; }
+      .stat { min-width:56px; padding:6px 6px; }
+      .stat b { font-size:12px; }
+      .stat span { font-size:8px; }
+      .hud-quest { top:64px; right:8px; width:210px; min-width:0; padding:6px 8px; }
+      .quest-title { font-size:10px; }
+      .quest-meta { font-size:8px; }
+      .interaction-hud { bottom:calc(76px + env(safe-area-inset-bottom)); font-size:10px; }
       .panel { top:68px; bottom:76px; right:8px; width:min(520px,calc(100vw - 16px)); }
       .pet-grid,.shop-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
       .touch-controls { bottom:calc(78px + env(safe-area-inset-bottom)); }
@@ -169,19 +204,29 @@
     <canvas id="game" aria-label="雙人公會遊戲畫面"></canvas>
 
     <div class="hud">
-      <div class="guild-card glass">
-        <div class="guild-title">🏰 星光旅團 · Lv.<span id="guildLevel">3</span></div>
-        <div class="guild-sub" id="guildStatus">今天也一起冒險吧</div>
+      <div class="rpg-profile glass">
+        <div class="profile-avatar">✦</div>
+        <div class="profile-copy">
+          <div class="profile-top"><div class="profile-name" id="playerName">我</div><div class="level-badge">Lv.<span id="guildLevel">3</span></div></div>
+          <div class="guild-title">🏰 <span id="guildTitle">星光旅團</span> · <span id="connectionState"><span class="connection-dot"></span>本機冒險</span></div>
+          <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+        </div>
       </div>
-      <div class="stats glass">
+      <div class="resource-bar glass">
         <div class="stat"><b>🪙 <span id="gold">520</span></b><span>Gold</span></div>
         <div class="stat"><b>⭐ <span id="xp">180</span></b><span>XP</span></div>
         <div class="stat"><b>🍖 <span id="food">5</span></b><span>貓罐頭</span></div>
       </div>
     </div>
 
+    <div class="hud-quest glass" id="hudQuest">
+      <div class="quest-kicker">CURRENT ADVENTURE</div>
+      <div class="quest-title" id="hudQuestTitle">探索星光旅團</div>
+      <div class="quest-meta" id="hudQuestMeta">去中央廣場看看今天的委託</div>
+    </div>
+    <div class="interaction-hud" id="interactionHud">E　互動</div>
     <div class="toast" id="toast"></div>
-    <div class="desktop-tip">WASD / 方向鍵移動 · E 互動 · 走到委託板接任務／回報 · 靠近貓咪再摸摸</div>
+    <div class="desktop-tip">WASD / 方向鍵移動 · E 互動 · 靠近委託板接受／回報</div>
 
     <div class="touch-controls">
       <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>

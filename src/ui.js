@@ -10,7 +10,20 @@ export function initUI(state, game){
   const refresh=()=>{
     const guildTitle=$('guildTitle');
     if(guildTitle) guildTitle.textContent=state.guild.name||'星光旅團';
+    const playerName=$('playerName');
+    if(playerName) playerName.textContent=state.player.name||'我';
     $('guildLevel').textContent=state.guild.level; $('gold').textContent=state.guild.gold; $('xp').textContent=state.guild.xp; $('food').textContent=state.food;
+    const xpNeed=Math.max(1,(Number(state.guild.level)||1)*150);
+    const xpPct=Math.max(0,Math.min(100,(Number(state.guild.xp)||0)/xpNeed*100));
+    const xpFill=$('xpFill'); if(xpFill) xpFill.style.width=`${xpPct}%`;
+    const active=(state.tasks||[]).filter(t=>t.status==='accepted');
+    const open=(state.tasks||[]).filter(t=>t.status==='open');
+    const questTitle=$('hudQuestTitle'); const questMeta=$('hudQuestMeta');
+    if(questTitle&&questMeta){
+      if(active.length){ questTitle.textContent=`📜 ${active[0].title}`; questMeta.textContent=`進行中 · 回到委託板回報 · +${active[0].gold} Gold`; }
+      else if(open.length){ questTitle.textContent=`📜 ${open.length} 件新委託`; questMeta.textContent='前往中央廣場的委託板接下一場冒險'; }
+      else { questTitle.textContent='✨ 自由探索'; questMeta.textContent='找找飛飛與呼呼，看看今天會發生什麼'; }
+    }
     renderTasks(); renderPets(); renderShop(); renderJournal();
   };
 

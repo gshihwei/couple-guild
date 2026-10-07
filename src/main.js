@@ -17,6 +17,30 @@ const game=new TownGame(canvas,state,callbacks);
 ui=initUI(state,game);
 const multiplayer=initMultiplayer(state,game,ui);
 ui.setMultiplayer?.(multiplayer);
+
+function updateWorldHud(){
+  const target=game.interactionTarget;
+  const hud=document.getElementById('interactionHud');
+  if(hud){
+    if(target){
+      const active=(state.tasks||[]).filter(t=>t.status==='accepted').length;
+      const open=(state.tasks||[]).filter(t=>t.status==='open').length;
+      const label=target.type==='board'
+        ? (active ? `E　${target.label} · 回報 ${active} 件` : open ? `E　${target.label} · ${open} 件新委託` : `E　${target.label}`)
+        : `E　${target.label}`;
+      hud.textContent=label;
+      hud.classList.add('show');
+    }else{
+      hud.classList.remove('show');
+    }
+  }
+  const dot=document.querySelector('.connection-dot');
+  const stateEl=document.getElementById('connectionState');
+  const connected=!!multiplayer?.mp?.connected;
+  if(dot) dot.classList.toggle('online',connected);
+  if(stateEl) stateEl.innerHTML=`<span class=\"connection-dot${connected?' online':''}\"></span>${connected?'線上同步':'本機冒險'}`;
+}
+setInterval(updateWorldHud,250);
 let lastSentX=null,lastSentY=null,lastSentAt=0;
 setInterval(async()=>{
   const mp=multiplayer?.mp;
