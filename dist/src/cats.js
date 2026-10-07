@@ -22,3 +22,19 @@ export function getPersonality(cat){
 export function getCoat(cat){
   return CAT_COATS[cat.coat] || CAT_COATS.calico;
 }
+
+export const CAT_ANIMATIONS = {
+  idle: { duration: 0, label: '' },
+  walk: { duration: 0, label: '' },
+  sleep: { duration: 0, label: 'Zzz' },
+  pet: { duration: 900, label: '❤️' },
+  eat: { duration: 1200, label: '🍖' },
+  play: { duration: 1400, label: '🎾' },
+  bite: { duration: 650, label: '🦷' },
+};
+
+export function setCatAnimation(cat, animation, now, text='') {
+  cat.animation = animation;
+  cat.animationUntil = CAT_ANIMATIONS[animation]?.duration ? now + CAT_ANIMATIONS[animation].duration : 0;
+  cat.actionText = text || CAT_ANIMATIONS[animation]?.label || '';
+}

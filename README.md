@@ -1,3 +1,7 @@
+## Current milestone
+
+**V0.4.0 — RPG World UI Integration**
+
 # Couple Guild · 雙人公會
 
 V0.1 vertical slice：

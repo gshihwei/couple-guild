@@ -8,8 +8,8 @@ const defaultState = {
   partner: { name: '另一半', x: 1900, y: 1320, skin: '#c58f63', shirt: '#9c6b58' },
   remotePlayers: {},
   cats: {
-    fly: { id:'fly', name:'飛飛', coat:'custom', personality:'affectionate', x:1830, y:1370, energy:72, hunger:40, mood:'想找人撒嬌', target:null, state:'wander' },
-    hu:  { id:'hu', name:'呼呼', coat:'custom', personality:'mischievous', x:1970, y:1270, energy:82, hunger:56, mood:'到處亂晃', target:null, state:'wander' }
+    fly: { id:'fly', name:'飛飛', coat:'custom', personality:'affectionate', x:1830, y:1370, energy:72, hunger:40, mood:'想找人撒嬌', target:null, state:'wander', animation:'walk', animationUntil:0, facing:'right', actionText:'' },
+    hu:  { id:'hu', name:'呼呼', coat:'custom', personality:'mischievous', x:1970, y:1270, energy:82, hunger:56, mood:'到處亂晃', target:null, state:'wander', animation:'walk', animationUntil:0, facing:'left', actionText:'' }
   },
   food: 5,
   tasks: [
@@ -27,7 +27,7 @@ const defaultState = {
     '呼呼正在觀察兩個人誰比較好欺負。'
   ],
   selectedPet: null,
-  worldVersion: 8,
+  worldVersion: 10,
   settings: { reducedMotion:false, autoSave:true },
   sessionStats: { playSeconds:0, tasksCompleted:0, petInteractions:0 },
   npcState: { steward: { x:1785, y:985, mood:'巡視中', target:null }, merchant: { x:1930, y:980, mood:'整理商品', target:null } },
@@ -99,6 +99,16 @@ export function loadState() {
       state.settings = state.settings || structuredClone(defaultState.settings);
       state.sessionStats = state.sessionStats || structuredClone(defaultState.sessionStats);
     }
+    if (state.worldVersion < 9) {
+      state.worldVersion = 9;
+      for (const cat of Object.values(state.cats || {})) {
+        cat.animation = cat.animation || (cat.state === 'sleep' ? 'sleep' : 'idle');
+        cat.animationUntil = Number(cat.animationUntil || 0);
+        cat.facing = cat.facing || 'right';
+        cat.actionText = cat.actionText || '';
+      }
+    }
+    if (state.worldVersion < 10) { state.worldVersion = 10; state.settings = {...state.settings, reducedMotion:!!state.settings?.reducedMotion, autoSave:state.settings?.autoSave!==false}; }
     return state;
   } catch { return structuredClone(defaultState); }
 }

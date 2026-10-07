@@ -39,6 +39,7 @@ function updateWorldHud(){
   const connected=!!multiplayer?.mp?.connected;
   if(dot) dot.classList.toggle('online',connected);
   if(stateEl) stateEl.innerHTML=`<span class=\"connection-dot${connected?' online':''}\"></span>${connected?'線上同步':'本機冒險'}`;
+  const onlineText=document.getElementById('onlineStatusText'); if(onlineText) onlineText.textContent=connected?'線上同步':'本機冒險'; const onlineCount=document.getElementById('onlineCount'); if(onlineCount) onlineCount.textContent=String(Object.values(state.remotePlayers||{}).filter(p=>p?.remote).length+1);
 }
 setInterval(updateWorldHud,250);
 let lastSentX=null,lastSentY=null,lastSentAt=0;

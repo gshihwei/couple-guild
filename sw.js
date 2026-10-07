@@ -1,4 +1,4 @@
-const CACHE='couple-guild-v0.3.12-map';
+const CACHE='couple-guild-v0.4.0-rpg';
 const ASSETS=['/','/index.html','/src/main.js','/src/game.js','/src/state.js','/src/ui.js','/src/cats.js','/manifest.webmanifest','/icons/icon.svg','/assets/fly.png','/assets/hu.png','/config.js','/src/multiplayer.js','/src/mp-ui.js','/src/version.js'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});

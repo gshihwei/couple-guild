@@ -51,6 +51,10 @@
     /* Feature workspace: entering a feature always replaces the town surface. */
     #app.feature-mode #game,
     #app.feature-mode .hud,
+    #app.feature-mode .v04-topbar,
+    #app.feature-mode .v04-map,
+    #app.feature-mode .v04-actions,
+    #app.feature-mode .v04-status,
     #app.feature-mode .hud-quest,
     #app.feature-mode .interaction-hud,
     #app.feature-mode .bottom-nav,
@@ -59,6 +63,10 @@
     #app.feature-mode .toast { visibility:hidden; pointer-events:none; }
     body.workspace-mode #game,
     body.workspace-mode #app > .hud,
+    body.workspace-mode #app > .v04-topbar,
+    body.workspace-mode #app > .v04-map,
+    body.workspace-mode #app > .v04-actions,
+    body.workspace-mode #app > .v04-status,
     body.workspace-mode #app > .hud-quest,
     body.workspace-mode #app > .interaction-hud,
     body.workspace-mode #app > .bottom-nav,
@@ -197,36 +205,231 @@
     .portrait-lock h2 { margin:0 0 8px; font-size:22px; }
     .portrait-lock p { margin:0; font-size:13px; line-height:1.7; color:#697068; }
     @keyframes rotateHint { 0%,100% { transform:rotate(0deg); } 50% { transform:rotate(90deg); } }
-  </style>
+
+    /* V0.4.0 RPG world HUD */
+    .v04-topbar { position:absolute; inset:0 0 auto 0; z-index:16; pointer-events:none; }
+    .v04-profile { width:min(380px,42vw); min-width:280px; }
+    .guild-crest { width:46px; height:46px; border-radius:15px; display:grid; place-items:center; flex:0 0 46px; background:linear-gradient(145deg,#f0c978,#b86b42); color:#fff8e8; font-size:25px; box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 5px 14px rgba(50,35,20,.18); }
+    .guild-line { display:flex; align-items:center; gap:7px; }
+    .guild-name { font-size:17px; font-weight:950; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .guild-level { font-size:12px; font-weight:950; color:#fff9ea; background:#315746; padding:4px 8px; border-radius:999px; }
+    .v04-resources { position:absolute; top:max(12px,env(safe-area-inset-top)); right:max(72px,calc(58px + env(safe-area-inset-right))); pointer-events:auto; }
+    .resource-pill { min-width:84px; padding:7px 10px; border-radius:16px; background:rgba(31,47,40,.88); color:#fff8e8; border:1px solid rgba(255,255,255,.16); box-shadow:0 8px 20px rgba(0,0,0,.18); }
+    .resource-pill b { display:block; font-size:15px; line-height:1; }
+    .resource-pill span { font-size:9px; opacity:.72; }
+    .v04-iconbar { position:absolute; top:max(12px,env(safe-area-inset-top)); right:max(10px,env(safe-area-inset-right)); display:flex; gap:6px; pointer-events:auto; }
+    .v04-iconbtn { width:44px; height:44px; border-radius:14px; background:rgba(31,47,40,.88); color:#fff8e8; border:1px solid rgba(255,255,255,.16); box-shadow:0 8px 20px rgba(0,0,0,.18); font-size:20px; position:relative; }
+    .v04-iconbtn .badge { position:absolute; top:-3px; right:-3px; min-width:15px; height:15px; border-radius:50%; display:grid; place-items:center; background:#e45f51; color:#fff; font-size:8px; font-weight:900; }
+    .v04-quest { left:max(14px,env(safe-area-inset-left)); right:auto; top:92px; width:min(355px,31vw); }
+    .v04-quest .quest-row { display:flex; gap:9px; align-items:flex-start; }
+    .quest-check { width:25px; height:25px; border-radius:8px; background:#3d6d58; color:#fff; display:grid; place-items:center; flex:0 0 25px; font-size:14px; }
+    .v04-map { position:absolute; top:68px; right:max(12px,env(safe-area-inset-right)); width:150px; height:150px; border-radius:50%; overflow:hidden; background:rgba(29,47,40,.9); border:4px solid rgba(255,250,237,.9); box-shadow:0 9px 28px rgba(0,0,0,.25); pointer-events:auto; z-index:15; }
+    #miniMap { width:100%; height:100%; display:block; }
+    .map-label { position:absolute; left:50%; bottom:5px; transform:translateX(-50%); background:rgba(31,47,40,.8); color:#fff; padding:3px 8px; border-radius:999px; font-size:9px; font-weight:900; white-space:nowrap; }
+    .touch-controls .quick-actions { display:none; }
+    .v04-actions { position:absolute; right:max(18px,env(safe-area-inset-right)); bottom:calc(118px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:8px; z-index:17; pointer-events:auto; }
+    .rpg-action { width:62px; height:62px; border-radius:20px; background:rgba(31,47,40,.9); color:#fff8e8; border:2px solid rgba(255,250,237,.78); box-shadow:0 8px 22px rgba(0,0,0,.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:22px; }
+    .rpg-action span { font-size:9px; font-weight:900; }
+    .rpg-action.primary-action { background:#3d6d58; }
+    .v04-bottom { width:min(650px,calc(100vw - 330px)); min-width:500px; background:rgba(31,47,40,.91); border:1px solid rgba(255,255,255,.12); padding:7px; border-radius:24px; }
+    .v04-bottom .nav-btn { color:#fff8e8; min-height:52px; }
+    .v04-bottom .nav-btn.active { background:#e6b765; color:#3b3021; }
+    .v04-bottom .nav-icon { font-size:22px; }
+    .v04-status { position:absolute; left:max(14px,env(safe-area-inset-left)); bottom:calc(18px + env(safe-area-inset-bottom)); z-index:16; pointer-events:none; padding:7px 11px; border-radius:999px; background:rgba(31,47,40,.86); color:#fff8e8; font-size:10px; font-weight:900; }
+    .v04-status .online-count { color:#f4cf76; }
+    .map-panel { display:grid; grid-template-columns:minmax(0,1fr) 240px; gap:14px; }
+    .world-map-card { min-height:420px; border-radius:22px; background:#a9c49f; overflow:hidden; position:relative; }
+    #worldMap { width:100%; height:100%; min-height:420px; display:block; }
+    .map-legend { display:grid; gap:9px; align-content:start; }
+    .legend-item { padding:11px 12px; border-radius:14px; background:#fffaf0; border:1px solid #eadcbf; font-size:12px; font-weight:800; }
+    @media (max-width:900px) and (orientation:landscape) {
+      .v04-profile { width:300px; min-width:250px; padding:7px 9px; }
+      .guild-crest { width:38px; height:38px; flex-basis:38px; font-size:20px; }
+      .guild-name { font-size:14px; }
+      .v04-resources { right:160px; top:8px; }
+      .resource-pill { min-width:66px; padding:6px 7px; }
+      .resource-pill b { font-size:12px; }
+      .v04-iconbtn { width:38px; height:38px; border-radius:12px; font-size:17px; }
+      .v04-map { top:54px; width:112px; height:112px; }
+      .v04-quest { top:70px; width:245px; padding:7px 9px; }
+      .v04-actions { right:9px; bottom:82px; }
+      .rpg-action { width:50px; height:50px; border-radius:16px; font-size:18px; }
+      .rpg-action span { font-size:8px; }
+      .v04-bottom { width:min(500px,calc(100vw - 220px)); min-width:400px; bottom:6px; }
+      .v04-status { left:8px; bottom:8px; }
+      .map-panel { grid-template-columns:1fr; }
+      .map-legend { grid-template-columns:repeat(3,1fr); }
+    }
+    @media (orientation:portrait) {
+      .v04-resources,.v04-iconbar,.v04-map,.v04-actions,.v04-bottom,.v04-status,.v04-quest { visibility:hidden; }
+    }
+
+    /* V0.4.2 — Reference RPG HUD: rebuild the HUD as one cohesive game interface. */
+    :root { --rpg-panel:rgba(20,37,48,.94); --rpg-panel-2:rgba(28,48,61,.96); --rpg-line:rgba(255,255,255,.20); --rpg-text:#fffaf0; --rpg-gold:#ffc64f; --rpg-blue:#4bb7e9; }
+    .v04-topbar { position:absolute; inset:0; pointer-events:none; z-index:40; }
+    .v04-topbar > .hud { position:absolute; left:18px; top:16px; right:auto; margin:0; pointer-events:none; }
+    .v04-profile { width:515px; min-width:515px; height:96px; padding:9px 14px 9px 11px; border-radius:22px; background:linear-gradient(180deg,rgba(18,39,48,.96),rgba(25,48,59,.94)); border:2px solid rgba(255,255,255,.22); box-shadow:0 7px 0 rgba(9,22,29,.26),0 12px 26px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.12); color:var(--rpg-text); }
+    .guild-crest { width:62px; height:62px; flex:0 0 62px; border-radius:17px; background:linear-gradient(145deg,#fff1c9,#f5d77f); border:2px solid rgba(255,255,255,.75); box-shadow:0 5px 10px rgba(0,0,0,.20),inset 0 2px 0 rgba(255,255,255,.9); font-size:34px; }
+    .guild-crest span { filter:drop-shadow(0 2px 1px rgba(78,51,27,.24)); }
+    .profile-copy { padding-top:1px; }
+    .guild-line { gap:10px; }
+    .guild-name { font-size:23px; line-height:1; letter-spacing:.2px; }
+    .guild-level { font-size:15px; padding:5px 10px; background:#315747; border:1px solid rgba(255,255,255,.10); }
+    .guild-title { font-size:10px; margin-top:7px; color:rgba(255,250,240,.72); }
+    .xp-track { height:11px; margin-top:9px; background:#12242c; border:1px solid rgba(255,255,255,.10); box-shadow:inset 0 2px 4px rgba(0,0,0,.3); }
+    .xp-fill { background:linear-gradient(90deg,#ffc34d,#ffd76e); box-shadow:0 0 8px rgba(255,197,77,.28); }
+    .v04-resources { top:16px; right:184px; pointer-events:auto; }
+    .v04-resources .resource-bar { display:flex; gap:8px; padding:0; }
+    .resource-pill { height:68px; min-width:178px; padding:0 12px; display:grid; grid-template-columns:44px 1fr 32px; align-items:center; gap:6px; border-radius:21px; background:linear-gradient(180deg,rgba(18,38,49,.97),rgba(26,49,61,.94)); color:#fff; border:2px solid rgba(255,255,255,.18); box-shadow:0 7px 0 rgba(7,20,27,.22),0 12px 24px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.10); }
+    .resource-gold { min-width:198px; }
+    .resource-xp { min-width:218px; }
+    .resource-food { min-width:178px; }
+    .resource-icon { width:40px; height:40px; display:grid; place-items:center; border-radius:50%; background:rgba(255,255,255,.07); font-size:26px; }
+    .resource-pill b { display:block; font-size:24px; line-height:1; font-weight:950; letter-spacing:.3px; }
+    .resource-plus { width:32px; height:32px; border-radius:50%; background:#1f3440; color:#fff7df; border:2px solid rgba(255,255,255,.32); font-size:24px; line-height:1; box-shadow:inset 0 1px 0 rgba(255,255,255,.15); }
+    .resource-pill > span:not(.resource-icon) { display:none; }
+    .v04-iconbar { top:16px; right:18px; gap:8px; }
+    .v04-iconbtn { width:64px; height:68px; border-radius:19px; background:linear-gradient(180deg,rgba(19,39,49,.97),rgba(28,51,62,.95)); border:2px solid rgba(255,255,255,.18); box-shadow:0 7px 0 rgba(7,20,27,.22),0 12px 24px rgba(0,0,0,.18); font-size:29px; }
+    .v04-iconbtn .badge { top:-5px; right:-5px; min-width:18px; height:18px; font-size:10px; border:2px solid #fff4df; }
+    .v04-quest { left:18px; right:auto; top:128px; width:410px; min-width:410px; padding:0; overflow:hidden; border-radius:21px; background:linear-gradient(180deg,rgba(19,39,49,.97),rgba(25,47,58,.95)); color:var(--rpg-text); border:2px solid rgba(255,255,255,.18); box-shadow:0 7px 0 rgba(8,20,27,.24),0 14px 28px rgba(0,0,0,.18); pointer-events:auto; }
+    .quest-panel-head { height:58px; display:flex; align-items:center; gap:9px; padding:0 16px; border-bottom:2px solid rgba(255,255,255,.10); font-size:18px; }
+    .quest-scroll { font-size:26px; filter:drop-shadow(0 2px 0 rgba(0,0,0,.25)); }
+    .quest-panel-head strong { flex:1; font-size:18px; }
+    .quest-count { font-size:15px; font-weight:900; color:#fff; }
+    .quest-chevron { color:#ffc64f; font-size:27px; font-weight:900; transform:translateY(-2px); }
+    .quest-list { display:grid; }
+    .hud-quest .hud-quest-row { min-height:78px; display:grid; grid-template-columns:34px 1fr auto; gap:10px; align-items:center; padding:9px 15px; border-top:1px solid rgba(255,255,255,.09); }
+    .hud-quest .hud-quest-check { width:27px; height:27px; border-radius:8px; display:grid; place-items:center; border:2px solid rgba(255,255,255,.88); color:#fff; font-size:16px; font-weight:900; }
+    .hud-quest .hud-quest-check.done { background:#46c99a; border-color:#8be5c3; }
+    .hud-quest .hud-quest-main { min-width:0; }
+    .hud-quest .hud-quest-title { font-size:15px; font-weight:950; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hud-quest .hud-quest-meta { margin-top:4px; color:rgba(255,250,240,.63); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hud-quest .hud-quest-tag { padding:6px 10px; border-radius:11px; font-size:11px; font-weight:950; color:#fff; background:#2db58d; white-space:nowrap; }
+    .hud-quest .hud-quest-tag.blue { background:#369dd2; }
+    .hud-quest .hud-quest-tag.coral { background:#f17a55; }
+    .v04-map { top:104px; right:18px; width:204px; height:204px; border:5px solid rgba(255,250,237,.95); background:#31586a; box-shadow:0 8px 0 rgba(0,0,0,.18),0 16px 28px rgba(0,0,0,.20); }
+    .v04-map::after { content:'☀'; position:absolute; right:8px; top:8px; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:#233b49; color:#ffd35f; border:2px solid rgba(255,255,255,.25); font-size:22px; }
+    .map-label { bottom:7px; padding:5px 13px; font-size:12px; background:#243d4a; border:1px solid rgba(255,255,255,.16); }
+    .v04-actions { right:24px; bottom:82px; gap:10px; align-items:center; }
+    .rpg-action { width:88px; height:88px; border-radius:50%; background:linear-gradient(180deg,rgba(27,45,56,.98),rgba(22,38,48,.98)); border:4px solid rgba(255,250,237,.88); box-shadow:0 7px 0 rgba(0,0,0,.23),0 12px 24px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.12); font-size:31px; gap:1px; }
+    .rpg-action b { line-height:1; filter:drop-shadow(0 2px 1px rgba(0,0,0,.22)); }
+    .rpg-action span { font-size:13px; letter-spacing:.5px; }
+    .rpg-action.primary-action { background:linear-gradient(180deg,#233e4d,#1d3340); }
+    .rpg-move-up { width:108px; height:108px; border-radius:50%; background:linear-gradient(180deg,rgba(54,58,62,.94),rgba(40,43,47,.94)); color:#fff; border:4px solid rgba(255,250,237,.88); box-shadow:0 7px 0 rgba(0,0,0,.24),0 12px 24px rgba(0,0,0,.20); font-size:58px; line-height:.7; margin-top:3px; }
+    .v04-bottom { left:50%; bottom:10px; width:550px; min-width:550px; height:106px; padding:7px 8px; border-radius:29px; display:flex; align-items:center; justify-content:center; gap:5px; background:rgba(18,37,48,.96); border:2px solid rgba(255,255,255,.18); box-shadow:0 7px 0 rgba(6,18,24,.28),0 16px 28px rgba(0,0,0,.20); }
+    .v04-bottom .nav-btn { width:98px; height:92px; min-height:92px; padding:4px 3px; border-radius:50%; color:#fff8ec; background:rgba(38,58,68,.72); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:13px; font-weight:900; }
+    .v04-bottom .nav-btn.active { background:linear-gradient(180deg,#ffc85d,#e9ad42); color:#352817; box-shadow:0 4px 0 rgba(130,83,23,.22),inset 0 2px 0 rgba(255,255,255,.42); }
+    .v04-bottom .nav-icon { width:46px; height:46px; display:grid; place-items:center; font-size:33px; line-height:1; }
+    .cat-nav-icon img { width:43px; height:43px; object-fit:contain; filter:drop-shadow(0 2px 2px rgba(0,0,0,.25)); }
+    .v04-status { left:18px; bottom:16px; height:48px; padding:0 15px; display:flex; align-items:center; gap:8px; border-radius:17px; background:rgba(18,37,48,.95); color:#fff8eb; border:2px solid rgba(255,255,255,.16); box-shadow:0 6px 0 rgba(0,0,0,.20),0 10px 22px rgba(0,0,0,.16); font-size:13px; }
+    .status-dot { width:12px; height:12px; border-radius:50%; background:#39d991; box-shadow:0 0 0 3px rgba(57,217,145,.15); }
+    .status-avatars { display:flex; margin-left:2px; }
+    .status-avatar { width:30px; height:30px; margin-left:-5px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(145deg,#f6d2b2,#d68e67); border:2px solid #20333e; color:#3b2c26; font-size:13px; font-weight:900; }
+    .v04-status strong { color:#fff; font-size:13px; }
+    .v04-status .online-count { color:#fff; }
+    .touch-controls { left:72px; right:auto; bottom:82px; z-index:30; }
+    .joystick { width:222px; height:222px; border-radius:50%; background:rgba(18,40,54,.68); border:2px solid rgba(255,255,255,.25); box-shadow:0 9px 0 rgba(0,0,0,.16),0 16px 28px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.10); }
+    .joystick::before { content:''; position:absolute; inset:24px; border-radius:50%; border:1px solid rgba(255,255,255,.08); }
+    .stick { width:86px; height:86px; left:68px; top:68px; border-radius:50%; background:linear-gradient(180deg,#fffaf0,#e8e3d8); border:2px solid rgba(70,76,80,.30); box-shadow:0 7px 14px rgba(0,0,0,.20),inset 0 2px 0 rgba(255,255,255,.9); }
+    .touch-controls .quick-actions { display:none; }
+    .interaction-hud { bottom:calc(50% + 40px); padding:10px 19px; border-radius:17px; background:#1e3140; color:#fff; border:3px solid rgba(255,250,237,.94); box-shadow:0 6px 0 rgba(0,0,0,.18); font-size:16px; }
+    .desktop-tip { display:none !important; }
+    @media (max-width:1200px) and (orientation:landscape) {
+      .v04-profile { width:420px; min-width:420px; }
+      .v04-resources { right:160px; }
+      .resource-pill { min-width:135px; height:58px; grid-template-columns:34px 1fr 28px; }
+      .resource-gold { min-width:150px; }.resource-xp { min-width:165px; }.resource-food { min-width:135px; }
+      .resource-icon { width:32px;height:32px;font-size:20px; }.resource-pill b{font-size:19px}.resource-plus{width:28px;height:28px;font-size:19px}
+      .v04-iconbtn { width:54px;height:58px; }
+      .v04-quest { width:360px;min-width:360px; }.v04-map{width:170px;height:170px}.rpg-action{width:76px;height:76px}.rpg-move-up{width:90px;height:90px}
+      .v04-bottom{width:490px;min-width:490px;height:94px}.v04-bottom .nav-btn{width:84px;height:80px;min-height:80px}.v04-bottom .nav-icon{width:40px;height:40px;font-size:27px}
+      .joystick{width:180px;height:180px}.stick{width:70px;height:70px;left:55px;top:55px}.touch-controls{left:40px}
+    }
+    @media (max-width:760px) and (orientation:landscape) {
+      .v04-topbar > .hud{left:8px;top:8px}.v04-profile{width:310px;min-width:310px;height:70px;padding:6px 8px}.guild-crest{width:48px;height:48px;flex-basis:48px;font-size:25px}.guild-name{font-size:16px}.guild-level{font-size:11px;padding:4px 7px}.guild-title{font-size:8px;margin-top:3px}.xp-track{height:7px;margin-top:5px}
+      .v04-resources{top:8px;right:118px}.resource-pill{height:46px;min-width:88px!important;grid-template-columns:28px 1fr 22px;border-radius:14px;padding:0 6px}.resource-icon{width:26px;height:26px;font-size:16px}.resource-pill b{font-size:14px}.resource-plus{width:22px;height:22px;font-size:15px;border-width:1px}
+      .v04-iconbar{top:8px;right:8px;gap:4px}.v04-iconbtn{width:46px;height:46px;border-radius:14px;font-size:21px}
+      .v04-quest{left:8px;top:86px;width:300px;min-width:300px;border-radius:16px}.quest-panel-head{height:44px;padding:0 10px}.quest-panel-head strong{font-size:14px}.quest-scroll{font-size:20px}.quest-count{font-size:11px}.quest-chevron{font-size:20px}.hud-quest .hud-quest-row{min-height:58px;padding:6px 10px;grid-template-columns:26px 1fr auto}.hud-quest .hud-quest-title{font-size:11px}.hud-quest .hud-quest-meta{font-size:8px}.hud-quest .hud-quest-tag{font-size:8px;padding:5px 7px}
+      .v04-map{top:62px;right:8px;width:116px;height:116px;border-width:3px}.map-label{font-size:8px;padding:3px 7px}.v04-map::after{width:26px;height:26px;font-size:15px}
+      .v04-actions{right:7px;bottom:62px;gap:4px}.rpg-action{width:58px;height:58px;border-width:3px;font-size:21px}.rpg-action span{font-size:8px}.rpg-move-up{width:70px;height:70px;border-width:3px;font-size:38px}
+      .v04-bottom{width:390px;min-width:390px;height:72px;bottom:5px;border-radius:23px;padding:4px}.v04-bottom .nav-btn{width:68px;height:64px;min-height:64px;font-size:9px}.v04-bottom .nav-icon{width:32px;height:32px;font-size:21px}.cat-nav-icon img{width:31px;height:31px}
+      .touch-controls{left:10px;bottom:60px}.joystick{width:110px;height:110px}.stick{width:46px;height:46px;left:31px;top:31px}.joystick::before{inset:13px}
+      .v04-status{left:8px;bottom:6px;height:36px;padding:0 9px;border-radius:13px;font-size:9px}.status-avatar{width:23px;height:23px;font-size:9px}.status-dot{width:8px;height:8px}
+    }
+  
+    /* V0.4.5: supplied-reference visual lock. The right-hand reference image is
+       intentionally the literal game surface. HTML controls remain transparent
+       hit areas so existing gameplay actions continue to work without altering
+       the reference artwork. */
+    #app.reference-image-mode .v04-topbar,
+    #app.reference-image-mode .v04-quest,
+    #app.reference-image-mode .v04-map,
+    #app.reference-image-mode .v04-actions,
+    #app.reference-image-mode .v04-status,
+    #app.reference-image-mode .bottom-nav,
+    #app.reference-image-mode .touch-controls,
+    #app.reference-image-mode .interaction-hud,
+    #app.reference-image-mode .toast {
+      opacity:0;
+    }
+    #app.reference-image-mode .v04-topbar,
+    #app.reference-image-mode .v04-quest,
+    #app.reference-image-mode .v04-map,
+    #app.reference-image-mode .v04-actions,
+    #app.reference-image-mode .bottom-nav,
+    #app.reference-image-mode .touch-controls {
+      pointer-events:auto;
+    }
+    #app.reference-image-mode .v04-status { pointer-events:none; }
+    #app.reference-image-mode .interaction-hud,
+    #app.reference-image-mode .toast { pointer-events:none; }
+</style>
 </head>
 <body>
-  <div id="app">
+  <div id="app" class="reference-image-mode">
     <canvas id="game" aria-label="雙人公會遊戲畫面"></canvas>
 
-    <div class="hud">
-      <div class="rpg-profile glass">
-        <div class="profile-avatar">✦</div>
-        <div class="profile-copy">
-          <div class="profile-top"><div class="profile-name" id="playerName">我</div><div class="level-badge">Lv.<span id="guildLevel">3</span></div></div>
-          <div class="guild-title">🏰 <span id="guildTitle">星光旅團</span> · <span id="connectionState"><span class="connection-dot"></span>本機冒險</span></div>
-          <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+    <div class="v04-topbar">
+      <div class="hud">
+        <div class="rpg-profile v04-profile glass">
+          <div class="guild-crest"><span>🏰</span></div>
+          <div class="profile-copy">
+            <div class="guild-line"><div class="guild-name" id="guildTitle">星光旅團</div><div class="guild-level">Lv.<span id="guildLevel">3</span></div></div>
+            <div class="guild-title"><span id="playerName">我</span> · <span id="connectionState">本機冒險</span></div>
+            <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+          </div>
         </div>
       </div>
-      <div class="resource-bar glass">
-        <div class="stat"><b>🪙 <span id="gold">520</span></b><span>Gold</span></div>
-        <div class="stat"><b>⭐ <span id="xp">180</span></b><span>XP</span></div>
-        <div class="stat"><b>🍖 <span id="food">5</span></b><span>貓罐頭</span></div>
+      <div class="v04-resources" id="v04Resources">
+        <div class="resource-bar" style="padding:0;gap:6px;background:none;box-shadow:none;border:0">
+          <div class="resource-pill resource-gold"><span class="resource-icon">🪙</span><b id="gold">520</b><button class="resource-plus" type="button">＋</button></div>
+          <div class="resource-pill resource-xp"><span class="resource-icon">⭐</span><b id="xp">180</b><button class="resource-plus" type="button">＋</button></div>
+          <div class="resource-pill resource-food"><span class="resource-icon">🍖</span><b id="food">5</b><button class="resource-plus" type="button">＋</button></div>
+        </div>
+      </div>
+      <div class="v04-iconbar">
+        <button class="v04-iconbtn" id="topJournal" title="冒險日誌">✉️</button>
+        <button class="v04-iconbtn" id="topTasks" title="任務"><span class="badge" id="taskBadge">0</span>🔔</button>
+        <button class="v04-iconbtn" id="topMenu" title="更多">☰</button>
       </div>
     </div>
 
-    <div class="hud-quest glass" id="hudQuest">
-      <div class="quest-kicker">CURRENT ADVENTURE</div>
-      <div class="quest-title" id="hudQuestTitle">探索星光旅團</div>
-      <div class="quest-meta" id="hudQuestMeta">去中央廣場看看今天的委託</div>
+    <div class="hud-quest v04-quest glass" id="hudQuest">
+      <div class="quest-panel-head"><span class="quest-scroll">📜</span><strong>冒險中的任務</strong><span class="quest-count" id="questCount">0/3</span><span class="quest-chevron">⌃</span></div>
+      <div class="quest-list" id="hudQuestList"></div>
     </div>
+
+    <div class="v04-map" id="miniMapWrap"><canvas id="miniMap" width="300" height="300"></canvas><div class="map-label">小鎮地圖</div></div>
+    <div class="v04-actions">
+      <button class="rpg-action primary-action" id="rpgInteract"><b>💬</b><span>互動</span></button>
+      <button class="rpg-action" id="rpgPet"><b>❤️</b><span>摸摸</span></button>
+      <button class="rpg-action" id="rpgFeed"><b>🍖</b><span>餵食</span></button>
+      <button class="rpg-action" id="rpgPlay"><b>🎾</b><span>玩耍</span></button>
+      <button class="rpg-move-up" id="rpgMoveUp" aria-label="向上移動">⌃</button>
+    </div>
+    <div class="v04-status"><span class="status-dot"></span><span id="onlineStatusText">線上同步中</span><span class="status-avatars" id="onlineAvatars"></span><strong><span class="online-count" id="onlineCount">1</span> / 2</strong> 成員在線</div>
     <div class="interaction-hud" id="interactionHud">E　互動</div>
     <div class="toast" id="toast"></div>
-    <div class="desktop-tip">WASD / 方向鍵移動 · E 互動 · 靠近委託板接受／回報</div>
 
     <div class="touch-controls">
       <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>
@@ -259,12 +462,25 @@
       <div id="journalList"></div>
     </div>
 
-    <div class="bottom-nav glass">
-      <button class="nav-btn active" data-nav="world"><span class="nav-icon">🏰</span>公會</button>
-      <button class="nav-btn" data-nav="tasks"><span class="nav-icon">📜</span>任務</button>
-      <button class="nav-btn" data-nav="pets"><span class="nav-icon">🐾</span>寵物</button>
-      <button class="nav-btn" data-nav="shop"><span class="nav-icon">🏪</span>商店</button>
-      <button class="nav-btn" data-nav="journal"><span class="nav-icon">📖</span>回憶</button>
+    <div class="bottom-nav v04-bottom glass">
+      <button class="nav-btn" data-nav="shop"><span class="nav-icon">🎒</span><span>背包</span></button>
+      <button class="nav-btn" data-nav="tasks"><span class="nav-icon">📜</span><span>任務</span></button>
+      <button class="nav-btn active nav-guild" data-nav="world"><span class="nav-icon">🏰</span><span>公會</span></button>
+      <button class="nav-btn" data-nav="pets"><span class="nav-icon cat-nav-icon"><img src="/assets/hu.png" alt="" /></span><span>貓咪</span></button>
+      <button class="nav-btn" data-nav="map"><span class="nav-icon">🗺️</span><span>地圖</span></button>
+    </div>
+
+    <div class="panel glass" id="panel-map">
+      <div class="panel-head"><div><h2>🗺️ 小鎮地圖</h2><div class="section-note">世界很大，鏡頭只陪你探索附近的地方。</div></div><button class="close" data-close="map">×</button></div>
+      <div class="map-panel">
+        <div class="world-map-card"><canvas id="worldMap" width="900" height="520"></canvas></div>
+        <div class="map-legend">
+          <div class="legend-item">🏰 公會之家<br><small>兩個人的基地</small></div>
+          <div class="legend-item">📜 委託板<br><small>接受與回報任務</small></div>
+          <div class="legend-item">🏪 雜貨商店<br><small>貓咪用品與兌換</small></div>
+          <div class="legend-item">🐱 飛飛／呼呼<br><small>會自己到處走</small></div>
+        </div>
+      </div>
     </div>
 
     <div class="install-tip glass" id="installTip">

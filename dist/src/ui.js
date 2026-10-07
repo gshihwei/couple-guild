@@ -10,18 +10,86 @@ export function initUI(state, game){
   const refresh=()=>{
     const guildTitle=$('guildTitle');
     if(guildTitle) guildTitle.textContent=state.guild.name||'星光旅團';
+    const playerName=$('playerName');
+    if(playerName) playerName.textContent=state.player.name||'我';
     $('guildLevel').textContent=state.guild.level; $('gold').textContent=state.guild.gold; $('xp').textContent=state.guild.xp; $('food').textContent=state.food;
+    const xpNeed=Math.max(1,(Number(state.guild.level)||1)*150);
+    const xpPct=Math.max(0,Math.min(100,(Number(state.guild.xp)||0)/xpNeed*100));
+    const xpFill=$('xpFill'); if(xpFill) xpFill.style.width=`${xpPct}%`;
+    const active=(state.tasks||[]).filter(t=>t.status==='accepted');
+    const open=(state.tasks||[]).filter(t=>t.status==='open');
+    const questList=$('hudQuestList'); const questCount=$('questCount');
+    if(questList){
+      questList.innerHTML='';
+      const visible=[...(state.tasks||[])].filter(t=>t.status!=='completed').slice(0,3);
+      if(questCount) questCount.textContent=`${visible.length}/3`;
+      if(!visible.length){
+        const row=document.createElement('div'); row.className='hud-quest-row';
+        row.innerHTML=`<div class="hud-quest-check done">✓</div><div class="hud-quest-main"><div class="hud-quest-title">自由探索</div><div class="hud-quest-meta">找找飛飛與呼呼，看看今天會發生什麼</div></div><span class="hud-quest-tag blue">探索</span>`;
+        questList.appendChild(row);
+      } else {
+        visible.forEach((t,i)=>{
+          const row=document.createElement('div'); row.className='hud-quest-row';
+          const accepted=t.status==='accepted'; const tag=accepted?'進行中':(t.target==='雙人'?'雙人':i===1?'生活':'新委託'); const tagClass=accepted?'':(tag==='雙人'?'blue':'coral');
+          row.innerHTML=`<div class="hud-quest-check ${accepted?'done':''}">${accepted?'✓':''}</div><div class="hud-quest-main"><div class="hud-quest-title">${escapeHtml(t.title||'未命名委託')}</div><div class="hud-quest-meta">${escapeHtml(t.desc||'完成後回到委託板回報')}</div></div><span class="hud-quest-tag ${tagClass}">${tag}</span>`;
+          questList.appendChild(row);
+        });
+      }
+    }
+    const badge=$('taskBadge'); if(badge) badge.textContent=String(active.length+open.length); const remoteCount=Object.values(state.remotePlayers||{}).filter(p=>p?.remote).length; const onlineText=$('onlineCount'); if(onlineText) onlineText.textContent=String(remoteCount+1);
+    const avatars=$('onlineAvatars'); if(avatars){ avatars.innerHTML=''; const people=[state.player,...Object.values(state.remotePlayers||{}).filter(p=>p?.remote)].slice(0,2); people.forEach(person=>{ const a=document.createElement('span'); a.className='status-avatar'; a.textContent=(person?.name||'我').slice(0,1); avatars.appendChild(a); }); }
+    const mini=document.getElementById('miniMap'); if(mini) drawMiniMap(mini);
     renderTasks(); renderPets(); renderShop(); renderJournal();
   };
 
   let taskContext='menu';
   const navs=[...document.querySelectorAll('.nav-btn')];
-  const panels={tasks:$('panel-tasks'),pets:$('panel-pets'),shop:$('panel-shop'),journal:$('panel-journal')};
+  const panels={tasks:$('panel-tasks'),pets:$('panel-pets'),shop:$('panel-shop'),journal:$('panel-journal'),map:$('panel-map')};
   function closePanels(){ Object.values(panels).forEach(p=>{p.classList.remove('open','workspace-open');}); document.getElementById('app')?.classList.remove('feature-mode'); document.body.classList.remove('workspace-mode'); navs.forEach(b=>b.classList.toggle('active',b.dataset.nav==='world')); }
-  function openPanel(name, context='menu'){ closePanels(); if(name==='tasks') taskContext=context; const panel=panels[name]; panel.classList.add('open','workspace-open'); document.getElementById('app')?.classList.add('feature-mode'); document.body.classList.add('workspace-mode'); navs.forEach(b=>b.classList.toggle('active',b.dataset.nav===name)); if(name==='tasks') renderTasks(); }
-  navs.forEach(btn=>btn.addEventListener('click',()=> btn.dataset.nav==='world'?closePanels():openPanel(btn.dataset.nav)));
-  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closePanels));
-  $('quickInteract').addEventListener('click',()=>game.interactNearest()); $('quickTask').addEventListener('click',()=>openPanel('tasks','menu')); $('quickPet').addEventListener('click',()=>openPanel('pets'));
+  function openPanel(name, context='menu'){ closePanels(); if(name==='tasks') taskContext=context; const panel=panels[name]; if(!panel) return; panel.classList.add('open','workspace-open'); document.getElementById('app')?.classList.add('feature-mode'); document.body.classList.add('workspace-mode'); navs.forEach(b=>b.classList.toggle('active',b.dataset.nav===name)); if(name==='tasks') renderTasks(); if(name==='map') renderWorldMap(); }
+  document.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('click',()=>{ closePanels(); }));
+  navs.forEach(btn=>btn.addEventListener('click',()=>{
+    const name=btn.dataset.nav;
+    if(name==='world'){ closePanels(); return; }
+    if(panels[name]) openPanel(name);
+  }));
+  $('topJournal')?.addEventListener('click',()=>openPanel('journal'));
+  $('topTasks')?.addEventListener('click',()=>openPanel('tasks'));
+  $('topMenu')?.addEventListener('click',()=>notify('☰ 更多功能將陸續加入。'));
+  $('miniMapWrap')?.addEventListener('click',()=>openPanel('map'));
+  $('rpgInteract')?.addEventListener('click',()=>game.interactNearest());
+  $('rpgPet')?.addEventListener('click',()=>game.interactNearestCat('pet'));
+  $('rpgFeed')?.addEventListener('click',()=>game.interactNearestCat('feed'));
+  $('rpgPlay')?.addEventListener('click',()=>game.interactNearestCat('play'));
+  function renderWorldMap(){
+    const canvas=$('worldMap'); if(!canvas) return; const c=canvas.getContext('2d'); const w=canvas.width,h=canvas.height;
+    c.clearRect(0,0,w,h); c.fillStyle='#a9c49f'; c.fillRect(0,0,w,h);
+    const sx=w/3600, sy=h/2400;
+    c.fillStyle='#7fb6bb'; c.fillRect(0,300*sy,760*sx,(2400-560)*sy);
+    const road=(x,y,rw,rh)=>{c.fillStyle='#d9c7a4';c.fillRect(x*sx,y*sy,rw*sx,rh*sy);};
+    road(1340,0,170,2400); road(0,1110,3600,150); road(540,620,1100,112); road(980,0,112,860); road(1840,520,112,820);
+    c.fillStyle='#d9c9aa'; c.beginPath(); c.ellipse(1800*sx,1200*sy,450*sx,250*sy,0,0,Math.PI*2); c.fill();
+    const marker=(x,y,color,label)=>{c.fillStyle=color;c.beginPath();c.arc(x*sx,y*sy,10,0,Math.PI*2);c.fill();c.strokeStyle='rgba(255,255,255,.9)';c.lineWidth=3;c.stroke();c.fillStyle='#26332e';c.font='700 18px system-ui';c.textAlign='left';c.fillText(label,x*sx+14,y*sy+6);};
+    marker(1440,1000,'#d59a58','🏰'); marker(1735,1000,'#3d6d58','📜'); marker(1930,980,'#b87955','🏪'); marker(1770,1200,'#4f8fcb','●');
+    marker(state.player.x,state.player.y,'#e85f54','你');
+    for(const rp of Object.values(state.remotePlayers||{})){if(rp?.remote) marker(rp.x,rp.y,'#5f9ed1','隊友');}
+    for(const cat of Object.values(state.cats||{})) marker(cat.x,cat.y,'#f1c86d',cat.id==='fly'?'飛':'呼');
+    c.fillStyle='rgba(31,47,40,.78)';c.fillRect(12,12,160,32);c.fillStyle='#fff9ea';c.font='800 15px system-ui';c.fillText('Couple Guild · 世界地圖',24,34);
+  }
+  function drawMiniMap(canvas){
+    const c=canvas.getContext('2d'), w=canvas.width, h=canvas.height, sx=w/3600, sy=h/2400;
+    c.clearRect(0,0,w,h); c.fillStyle='#a9c49f'; c.fillRect(0,0,w,h);
+    c.fillStyle='#7fb6bb'; c.fillRect(0,300*sy,760*sx,(2400-560)*sy);
+    const road=(x,y,rw,rh)=>{c.fillStyle='#d9c7a4';c.fillRect(x*sx,y*sy,rw*sx,rh*sy);};
+    road(1340,0,170,2400); road(0,1110,3600,150); road(540,620,1100,112); road(980,0,112,860); road(1840,520,112,820);
+    c.fillStyle='#d9c9aa'; c.beginPath(); c.ellipse(1800*sx,1200*sy,450*sx,250*sy,0,0,Math.PI*2); c.fill();
+    const dot=(x,y,color,r=4)=>{c.fillStyle=color;c.beginPath();c.arc(x*sx,y*sy,r,0,Math.PI*2);c.fill();};
+    dot(1440,1000,'#d59a58',5); dot(1735,1000,'#3d6d58',5); dot(1930,980,'#b87955',5);
+    dot(state.player.x,state.player.y,'#e85f54',7);
+    for(const rp of Object.values(state.remotePlayers||{})){if(rp?.remote) dot(rp.x,rp.y,'#5f9ed1',6);}
+    for(const cat of Object.values(state.cats||{})) dot(cat.x,cat.y,'#f1c86d',4);
+    c.strokeStyle='rgba(255,255,255,.85)'; c.lineWidth=2; c.strokeRect(Math.max(0,state.player.x*sx-22),Math.max(0,state.player.y*sy-18),44,36);
+  }
 
   function renderTasks(){
     const list=$('taskList'); list.innerHTML='';
