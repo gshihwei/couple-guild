@@ -4,6 +4,19 @@ import { initUI } from './ui.js';
 import { initMultiplayer } from './mp-ui.js';
 
 const state = loadState();
+
+// Landscape-first: try the native Screen Orientation API when supported.
+// Browsers may reject this outside an installed PWA/fullscreen; the CSS portrait fallback
+// still presents the game as a rotated landscape surface without blocking the player.
+async function lockLandscape(){
+  try{
+    if(screen.orientation?.lock) await screen.orientation.lock('landscape');
+  }catch(_){}
+}
+lockLandscape();
+window.addEventListener('pointerdown',lockLandscape,{once:true,passive:true});
+window.addEventListener('touchstart',lockLandscape,{once:true,passive:true});
+
 const canvas=document.getElementById('game');
 let ui;
 const callbacks={

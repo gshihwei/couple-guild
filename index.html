@@ -158,10 +158,16 @@
     }
 
     @media (orientation: portrait) {
+      /* Mobile portrait fallback: rotate the entire game surface instead of showing a blocking prompt. */
+      html, body { width:100vw; height:100dvh; overflow:hidden; }
       body { background:#15231e; }
-      #app { width:100vw; height:100dvh; }
-      #game { filter:brightness(.68); }
-      .portrait-lock { display:flex !important; }
+      #app {
+        position:absolute;
+        left:50%; top:50%;
+        width:100dvh; height:100vw;
+        transform:translate(-50%,-50%) rotate(90deg);
+        transform-origin:center center;
+      }
     }
 
     @media (max-width: 760px) and (orientation: landscape) {
@@ -190,21 +196,6 @@
       .nav-icon { font-size:17px; }
       .desktop-tip { display:none; }
     }
-
-    .portrait-lock {
-      display:none; position:absolute; inset:0; z-index:100;
-      align-items:center; justify-content:center; padding:28px;
-      background:rgba(24,39,32,.92); color:#fff9ea; text-align:center;
-    }
-    .portrait-lock-card {
-      width:min(360px,90vw); padding:28px 22px; border-radius:28px;
-      background:rgba(255,250,237,.97); color:#26332e;
-      box-shadow:0 20px 60px rgba(0,0,0,.28);
-    }
-    .rotate-icon { font-size:58px; line-height:1; margin-bottom:14px; animation:rotateHint 1.8s ease-in-out infinite; }
-    .portrait-lock h2 { margin:0 0 8px; font-size:22px; }
-    .portrait-lock p { margin:0; font-size:13px; line-height:1.7; color:#697068; }
-    @keyframes rotateHint { 0%,100% { transform:rotate(0deg); } 50% { transform:rotate(90deg); } }
 
     /* V0.4.0 RPG world HUD */
     .v04-topbar { position:absolute; inset:0 0 auto 0; z-index:16; pointer-events:none; }
@@ -260,10 +251,6 @@
       .map-panel { grid-template-columns:1fr; }
       .map-legend { grid-template-columns:repeat(3,1fr); }
     }
-    @media (orientation:portrait) {
-      .v04-resources,.v04-iconbar,.v04-map,.v04-actions,.v04-bottom,.v04-status,.v04-quest { visibility:hidden; }
-    }
-
     /* V0.4.2 — Reference RPG HUD: rebuild the HUD as one cohesive game interface. */
     :root { --rpg-panel:rgba(20,37,48,.94); --rpg-panel-2:rgba(28,48,61,.96); --rpg-line:rgba(255,255,255,.20); --rpg-text:#fffaf0; --rpg-gold:#ffc64f; --rpg-blue:#4bb7e9; }
     .v04-topbar { position:absolute; inset:0; pointer-events:none; z-index:40; }
@@ -357,36 +344,31 @@
       .v04-status{left:8px;bottom:6px;height:36px;padding:0 9px;border-radius:13px;font-size:9px}.status-avatar{width:23px;height:23px;font-size:9px}.status-dot{width:8px;height:8px}
     }
   
-    /* V0.4.5: supplied-reference visual lock. The right-hand reference image is
-       intentionally the literal game surface. HTML controls remain transparent
-       hit areas so existing gameplay actions continue to work without altering
-       the reference artwork. */
-    #app.reference-image-mode .v04-topbar,
-    #app.reference-image-mode .v04-quest,
-    #app.reference-image-mode .v04-map,
-    #app.reference-image-mode .v04-actions,
-    #app.reference-image-mode .v04-status,
-    #app.reference-image-mode .bottom-nav,
-    #app.reference-image-mode .touch-controls,
-    #app.reference-image-mode .interaction-hud,
-    #app.reference-image-mode .toast {
-      opacity:0;
-    }
-    #app.reference-image-mode .v04-topbar,
-    #app.reference-image-mode .v04-quest,
-    #app.reference-image-mode .v04-map,
-    #app.reference-image-mode .v04-actions,
-    #app.reference-image-mode .bottom-nav,
-    #app.reference-image-mode .touch-controls {
-      pointer-events:auto;
-    }
-    #app.reference-image-mode .v04-status { pointer-events:none; }
-    #app.reference-image-mode .interaction-hud,
-    #app.reference-image-mode .toast { pointer-events:none; }
+    /* V0.5.0 — layered reconstruction: the reference artwork is the visual plate;
+       gameplay actors are rendered as movable sprites above it. HUD remains hidden
+       visually here because the supplied reference already contains the exact HUD. */
+    #app.v050-layered-mode .v04-topbar,
+    #app.v050-layered-mode .v04-quest,
+    #app.v050-layered-mode .v04-map,
+    #app.v050-layered-mode .v04-actions,
+    #app.v050-layered-mode .v04-status,
+    #app.v050-layered-mode .bottom-nav,
+    #app.v050-layered-mode .touch-controls,
+    #app.v050-layered-mode .interaction-hud,
+    #app.v050-layered-mode .toast { opacity:0; }
+    #app.v050-layered-mode .v04-topbar,
+    #app.v050-layered-mode .v04-quest,
+    #app.v050-layered-mode .v04-map,
+    #app.v050-layered-mode .v04-actions,
+    #app.v050-layered-mode .bottom-nav,
+    #app.v050-layered-mode .touch-controls { pointer-events:auto; }
+    #app.v050-layered-mode .v04-status,
+    #app.v050-layered-mode .interaction-hud,
+    #app.v050-layered-mode .toast { pointer-events:none; }
 </style>
 </head>
 <body>
-  <div id="app" class="reference-image-mode">
+  <div id="app" class="v050-layered-mode">
     <canvas id="game" aria-label="雙人公會遊戲畫面"></canvas>
 
     <div class="v04-topbar">
@@ -551,13 +533,6 @@
         </div>
         <div style="margin-top:12px;font-size:12px;color:#76776f">摸牠有機率被咬，這是貓咪的特權 XD</div>
         <div class="modal-actions" style="margin-top:8px"><button class="secondary" id="closePet">關閉</button></div>
-      </div>
-    </div>
-    <div class="portrait-lock" aria-live="polite">
-      <div class="portrait-lock-card">
-        <div class="rotate-icon">📱↔️</div>
-        <h2>請橫向遊玩</h2>
-        <p>Couple Guild 的小鎮是為橫向畫面設計的。<br>請把手機旋轉成橫向，就可以開始冒險囉！</p>
       </div>
     </div>
   </div>

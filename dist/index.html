@@ -356,10 +356,32 @@
       .touch-controls{left:10px;bottom:60px}.joystick{width:110px;height:110px}.stick{width:46px;height:46px;left:31px;top:31px}.joystick::before{inset:13px}
       .v04-status{left:8px;bottom:6px;height:36px;padding:0 9px;border-radius:13px;font-size:9px}.status-avatar{width:23px;height:23px;font-size:9px}.status-dot{width:8px;height:8px}
     }
-  </style>
+  
+    /* V0.5.0 — layered reconstruction: the reference artwork is the visual plate;
+       gameplay actors are rendered as movable sprites above it. HUD remains hidden
+       visually here because the supplied reference already contains the exact HUD. */
+    #app.v050-layered-mode .v04-topbar,
+    #app.v050-layered-mode .v04-quest,
+    #app.v050-layered-mode .v04-map,
+    #app.v050-layered-mode .v04-actions,
+    #app.v050-layered-mode .v04-status,
+    #app.v050-layered-mode .bottom-nav,
+    #app.v050-layered-mode .touch-controls,
+    #app.v050-layered-mode .interaction-hud,
+    #app.v050-layered-mode .toast { opacity:0; }
+    #app.v050-layered-mode .v04-topbar,
+    #app.v050-layered-mode .v04-quest,
+    #app.v050-layered-mode .v04-map,
+    #app.v050-layered-mode .v04-actions,
+    #app.v050-layered-mode .bottom-nav,
+    #app.v050-layered-mode .touch-controls { pointer-events:auto; }
+    #app.v050-layered-mode .v04-status,
+    #app.v050-layered-mode .interaction-hud,
+    #app.v050-layered-mode .toast { pointer-events:none; }
+</style>
 </head>
 <body>
-  <div id="app">
+  <div id="app" class="v050-layered-mode">
     <canvas id="game" aria-label="雙人公會遊戲畫面"></canvas>
 
     <div class="v04-topbar">

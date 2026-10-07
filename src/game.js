@@ -2,8 +2,10 @@ import { addJournal, addPetEvent, saveState } from './state.js';
 import { getCoat, getPersonality, setCatAnimation } from './cats.js';
 
 const W = 1280, H = 720;
-const WORLD_W = 3600, WORLD_H = 2400;
-const SCENE_OX = 1140, SCENE_OY = 770;
+const WORLD_W = 1280, WORLD_H = 720;
+const SCENE_OX = 0, SCENE_OY = 0;
+const V050_SX = 1280 / 1672;
+const V050_SY = 720 / 941;
 const PLAYER_SPEED = 145;
 const CAMERA_AHEAD_Y = 42;
 const CAMERA_EASE = 10;
@@ -12,20 +14,17 @@ const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
 const dist = (a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
 const OBSTACLES = [
-  {x:SCENE_OX+160,y:SCENE_OY+25,w:285,h:150},
-  {x:SCENE_OX+850,y:SCENE_OY+20,w:265,h:145},
-  {x:SCENE_OX+610,y:SCENE_OY+215,w:100,h:215},
-  {x:SCENE_OX+220,y:SCENE_OY+385,w:900,h:90},
-  {x:110,y:980,w:230,h:120},
-  {x:2940,y:820,w:240,h:125},
-  {x:2590,y:1320,w:210,h:100},
+  {x:440,y:205,w:190,h:115},
+  {x:890,y:145,w:300,h:190},
+  {x:790,y:515,w:270,h:145},
+  {x:0,y:515,w:270,h:205},
 ];
 
 const INTERACTABLES = [
-  {id:'board', type:'board', x:SCENE_OX+595, y:SCENE_OY+230, label:'公會委託板', hint:'查看與接受委託'},
-  {id:'guild-npc', type:'npc', x:SCENE_OX+445, y:SCENE_OY+215, label:'公會管家', hint:'聊聊公會任務'},
-  {id:'shop-npc', type:'npc-shop', x:SCENE_OX+960, y:SCENE_OY+210, label:'雜貨商', hint:'看看商店'},
-  {id:'guild-house', type:'house', x:SCENE_OX+300, y:SCENE_OY+185, label:'公會之家', hint:'這是你們的家'},
+  {id:'board', type:'board', x:610, y:275, label:'公會委託板', hint:'查看與接受委託'},
+  {id:'guild-npc', type:'npc', x:535, y:245, label:'公會管家', hint:'聊聊公會任務'},
+  {id:'shop-npc', type:'npc-shop', x:930, y:315, label:'雜貨商', hint:'看看商店'},
+  {id:'guild-house', type:'house', x:350, y:390, label:'公會之家', hint:'這是你們的家'},
 ];
 
 export class TownGame {
@@ -38,7 +37,12 @@ export class TownGame {
     this.catImages={fly:new Image(),hu:new Image()};
     this.catImages.fly.src='/assets/fly.png'; this.catImages.hu.src='/assets/hu.png';
     this.worldArt=new Image(); this.worldArt.src='/assets/town-plaza.svg';
-    this.referenceArt=new Image(); this.referenceArt.src='/assets/reference-rpg-scene.png';
+    this.referenceArt=new Image(); this.referenceArt.src='/assets/v050/reference-live-bg.png';
+    this.v050Sprites={player:new Image(),partner:new Image(),cat1:new Image(),cat2:new Image()};
+    this.v050Sprites.player.src='/assets/v050/player.png';
+    this.v050Sprites.partner.src='/assets/v050/partner.png';
+    this.v050Sprites.cat1.src='/assets/v050/cat1.png';
+    this.v050Sprites.cat2.src='/assets/v050/cat2.png';
     this.resize(); window.addEventListener('resize',()=>this.resize());
     this.canvas.tabIndex=0; this.canvas.setAttribute('role','application');
     const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
@@ -86,12 +90,12 @@ export class TownGame {
     if(moving){ if(Math.abs(x)>Math.abs(y))this.playerFacing=x<0?'left':'right'; else this.playerFacing=y<0?'up':'down'; this.walkFrame+=dt*9; this.movePlayer(x/len*PLAYER_SPEED*dt,y/len*PLAYER_SPEED*dt); }
     else this.walkFrame=0;
 
-    const q=this.state.partner;if(!q.remote){const a=this.time/5200;q.x=SCENE_OX+755+Math.cos(a)*100;q.y=SCENE_OY+430+Math.sin(a*1.35)*70;}
+    const q=this.state.partner;if(!q.remote){const a=this.time/5200;q.x=705+Math.cos(a)*48;q.y=398+Math.sin(a*1.35)*28;}
     if(this.time-this.lastPetBrain>1800){this.lastPetBrain=this.time;this.decideCat();}
     for(const cat of Object.values(this.state.cats))this.updateCat(cat,dt);
     this.updateNPCs(dt);
 
-    const targetCamX=clamp(p.x-W/2,0,WORLD_W-W),targetCamY=clamp(p.y-H/2-CAMERA_AHEAD_Y,0,WORLD_H-H),ease=1-Math.exp(-dt*CAMERA_EASE);
+    const targetCamX=0,targetCamY=0,ease=1-Math.exp(-dt*CAMERA_EASE);
     this.camera.x+=(targetCamX-this.camera.x)*ease;this.camera.y+=(targetCamY-this.camera.y)*ease;
     this.interactionTarget=this.findNearestInteractable();this.interactionPulse=(this.interactionPulse+dt)%2;
     this.updateFloaters(dt);
@@ -152,18 +156,49 @@ export class TownGame {
     const c=this.ctx;
     c.setTransform(this.scaleX,0,0,this.scaleY,0,0);
     c.clearRect(0,0,W,H);
-    // V0.4.5 reference-lock mode: the supplied reference image is the actual
-    // game surface. This intentionally preserves the reference pixel-for-pixel
-    // at the 16:9 game viewport instead of recreating it approximately with Canvas.
-    if(document.getElementById('app')?.classList.contains('reference-image-mode')){
+    if(document.getElementById('app')?.classList.contains('v050-layered-mode')){
       if(this.referenceArt.complete && this.referenceArt.naturalWidth){
         c.drawImage(this.referenceArt,0,0,W,H);
-      } else {
-        c.fillStyle='#17344a'; c.fillRect(0,0,W,H);
-      }
+        this.drawV050Actors(c);
+        this.drawV050Interaction(c);
+        this.drawFloaters(c);
+      }else{ c.fillStyle='#17344a'; c.fillRect(0,0,W,H); }
       return;
     }
     c.save();c.translate(-this.camera.x,-this.camera.y);this.drawWorld(c);for(const rp of Object.values(this.state.remotePlayers||{})){if(rp?.remote)this.drawCharacter(c,rp,true);}if(this.state.partner?.remote && !(this.state.remotePlayers&&Object.keys(this.state.remotePlayers).length))this.drawCharacter(c,this.state.partner,true);this.drawCharacter(c,this.state.player,false);for(const cat of Object.values(this.state.cats))this.drawCat(c,cat);this.drawNPCs(c);this.drawInteractionMarker(c);this.drawFloaters(c);c.restore();
+  }
+
+  drawV050Actors(c){
+    const drawSprite=(img,x,y,scale=1,flip=false,bob=0)=>{
+      if(!img?.complete||!img.naturalWidth)return;
+      const w=img.naturalWidth*V050_SX*scale, h=img.naturalHeight*V050_SY*scale;
+      c.save(); c.translate(x,y+bob); c.scale(flip?-1:1,1); c.globalAlpha=.98; c.drawImage(img,-w/2,-h,w,h); c.restore();
+    };
+    const actorVisual=(id,actor)=>{
+      const prev=this.actorVisuals.get(id)||{x:actor.x,y:actor.y,frame:0,dir:'down'};
+      const dx=actor.x-prev.x,dy=actor.y-prev.y,moved=Math.hypot(dx,dy)>.2;
+      if(moved){prev.frame+=.16;if(Math.abs(dx)>Math.abs(dy))prev.dir=dx<0?'left':'right';else prev.dir=dy<0?'up':'down';}else prev.frame*=.86;
+      prev.x=actor.x;prev.y=actor.y;this.actorVisuals.set(id,prev);return {moved,prev};
+    };
+    const p=this.state.player; const pv=actorVisual('player',p);
+    drawSprite(this.v050Sprites.player,p.x,p.y,1,pv.prev.dir==='left',pv.moved?Math.sin(pv.prev.frame*2)*1.4:0);
+    const q=this.state.partner; const qv=actorVisual('partner',q);
+    drawSprite(this.v050Sprites.partner,q.x,q.y,.98,qv.prev.dir==='left',qv.moved?Math.sin(qv.prev.frame*2)*1.2:0);
+    for(const rp of Object.values(this.state.remotePlayers||{})){if(!rp?.remote)continue;const rv=actorVisual(rp.user_id||rp.name||'remote',rp);drawSprite(this.v050Sprites.partner,rp.x,rp.y,.98,rv.prev.dir==='left',rv.moved?Math.sin(rv.prev.frame*2)*1.2:0);}
+    for(const cat of Object.values(this.state.cats||{})){
+      const cv=actorVisual(cat.id,cat); const img=cat.id==='fly'?this.v050Sprites.cat1:this.v050Sprites.cat2;
+      const bob=cat.animation==='play'?Math.abs(Math.sin(this.time/90))*4:cat.animation==='sleep'?0:Math.sin(this.time/260+(cat.id==='hu'?1:0))*1.2;
+      drawSprite(img,cat.x,cat.y,.92,cat.facing==='left',bob);
+    }
+  }
+
+  drawV050Interaction(c){
+    const t=this.interactionTarget;if(!t)return;
+    const x=t.x,y=t.y-62,pulse=Math.sin(this.time/220)*2;
+    c.save(); c.translate(x,y+pulse); c.fillStyle='rgba(20,34,46,.96)'; c.strokeStyle='rgba(255,255,255,.96)'; c.lineWidth=3;
+    c.beginPath(); c.roundRect(-66,-28,132,54,18); c.fill(); c.stroke();
+    c.fillStyle='#fff'; c.font='900 17px system-ui'; c.textAlign='center'; c.fillText('E  互動',0,7);
+    c.fillStyle='rgba(20,34,46,.96)'; c.beginPath();c.moveTo(-10,26);c.lineTo(0,38);c.lineTo(10,26);c.closePath();c.fill(); c.restore();
   }
   drawWorld(c){
     // V0.4.4: illustrated RPG town scene. The world stays large, while the
