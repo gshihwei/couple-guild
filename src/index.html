@@ -347,6 +347,10 @@
     /* V0.5.0 — layered reconstruction: the reference artwork is the visual plate;
        gameplay actors are rendered as movable sprites above it. HUD remains hidden
        visually here because the supplied reference already contains the exact HUD. */
+    /* V0.5.11: on-screen joystick DOM removed. Mobile uses long-press drag on #game. */
+    #app.v050-layered-mode .desktop-tip { display:none !important; }
+    #app.v050-layered-mode #game { touch-action:none; }
+
     #app.v050-layered-mode .v04-topbar,
     #app.v050-layered-mode .v04-quest,
     #app.v050-layered-mode .v04-map,
@@ -413,14 +417,6 @@
     <div class="interaction-hud" id="interactionHud">E　互動</div>
     <div class="toast" id="toast"></div>
 
-    <div class="touch-controls">
-      <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>
-      <div class="quick-actions">
-        <button class="quick-btn" id="quickInteract" title="互動">✋</button>
-        <button class="quick-btn" id="quickTask" title="任務">📜</button>
-        <button class="quick-btn" id="quickPet" title="寵物">🐾</button>
-      </div>
-    </div>
 
     <div class="panel glass" id="panel-tasks">
       <div class="panel-head"><div><h2>📜 公會委託</h2><div class="section-note">把生活中的小事變成一起完成的冒險。</div></div><button class="close" data-close="tasks">×</button></div>

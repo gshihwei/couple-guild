@@ -1,4 +1,4 @@
-const CACHE='couple-guild-v0.5.0-sprite-layer';
+const CACHE='couple-guild-v0.5.13-clean-reference';
 const ASSETS=['/','/index.html','/src/main.js','/src/game.js','/src/state.js','/src/ui.js','/src/cats.js','/manifest.webmanifest','/icons/icon.svg','/assets/fly.png','/assets/hu.png','/assets/v050/reference-live-bg.png','/assets/v050/player.png','/assets/v050/partner.png','/assets/v050/cat1.png','/assets/v050/cat2.png','/config.js','/src/multiplayer.js','/src/mp-ui.js','/src/version.js'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});

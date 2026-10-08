@@ -27,7 +27,7 @@ const defaultState = {
     '呼呼正在觀察兩個人誰比較好欺負。'
   ],
   selectedPet: null,
-  worldVersion: 50,
+  worldVersion: 58,
   settings: { reducedMotion:false, autoSave:true },
   sessionStats: { playSeconds:0, tasksCompleted:0, petInteractions:0 },
   npcState: { steward: { x:560, y:245, mood:'巡視中', target:null }, merchant: { x:920, y:320, mood:'整理商品', target:null } },
@@ -116,6 +116,14 @@ export function loadState() {
       if (state.cats?.fly) { state.cats.fly.x = 545; state.cats.fly.y = 445; }
       if (state.cats?.hu) { state.cats.hu.x = 775; state.cats.hu.y = 445; }
       state.npcState = { ...(state.npcState||{}), merchant:{x:920,y:320,mood:'整理商品',target:null}, steward:{x:560,y:245,mood:'巡視中',target:null} };
+    }
+    if (state.worldVersion < 58) {
+      state.worldVersion = 58;
+      for (const cat of Object.values(state.cats || {})) {
+        cat.wanderTarget = null;
+        cat.x = cat.id === 'fly' ? 545 : 775;
+        cat.y = 445;
+      }
     }
     return state;
   } catch { return structuredClone(defaultState); }

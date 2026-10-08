@@ -4,6 +4,19 @@ import { initUI } from './ui.js';
 import { initMultiplayer } from './mp-ui.js';
 
 const state = loadState();
+
+// Landscape-first: try the native Screen Orientation API when supported.
+// Browsers may reject this outside an installed PWA/fullscreen; the CSS portrait fallback
+// still presents the game as a rotated landscape surface without blocking the player.
+async function lockLandscape(){
+  try{
+    if(screen.orientation?.lock) await screen.orientation.lock('landscape');
+  }catch(_){}
+}
+lockLandscape();
+window.addEventListener('pointerdown',lockLandscape,{once:true,passive:true});
+window.addEventListener('touchstart',lockLandscape,{once:true,passive:true});
+
 const canvas=document.getElementById('game');
 let ui;
 const callbacks={
@@ -56,17 +69,59 @@ setInterval(async()=>{
   }
 },500);
 
-// Touch joystick
-const joystick=document.getElementById('joystick');
-const stick=document.getElementById('stick');
-let joyPointer=null;
-function updateJoy(e){
-  const r=joystick.getBoundingClientRect(); const cx=r.left+r.width/2, cy=r.top+r.height/2; const dx=e.clientX-cx, dy=e.clientY-cy; const max=31; const len=Math.hypot(dx,dy)||1; const scale=Math.min(1,max/len); const x=dx*scale,y=dy*scale; stick.style.transform=`translate(${x}px,${y}px)`; game.setJoystick(x/max,y/max);
+// Mobile movement: no on-screen joystick.
+// Long-press the world, then drag in the direction you want to walk.
+// Desktop remains WASD / arrow keys through TownGame's keyboard handler.
+let touchPointer=null;
+let touchStart={x:0,y:0};
+let touchActive=false;
+let touchTimer=null;
+
+function touchVector(e){
+  const dx=e.clientX-touchStart.x;
+  const dy=e.clientY-touchStart.y;
+  const len=Math.hypot(dx,dy);
+  if(len<10) return {x:0,y:0};
+  const x=Math.max(-1,Math.min(1,dx/Math.max(32,len)));
+  const y=Math.max(-1,Math.min(1,dy/Math.max(32,len)));
+  if(Math.abs(dx)>=Math.abs(dy)) return {x:Math.sign(dx),y:0};
+  return {x:0,y:Math.sign(dy)};
 }
-joystick.addEventListener('pointerdown',e=>{joyPointer=e.pointerId; joystick.setPointerCapture(e.pointerId); updateJoy(e);});
-joystick.addEventListener('pointermove',e=>{if(e.pointerId===joyPointer) updateJoy(e);});
-const clearJoy=()=>{joyPointer=null;stick.style.transform='translate(0,0)';game.setJoystick(0,0);};
-joystick.addEventListener('pointerup',clearJoy); joystick.addEventListener('pointercancel',clearJoy);
+
+function endTouch(){
+  if(touchTimer){clearTimeout(touchTimer);touchTimer=null;}
+  touchPointer=null;
+  touchActive=false;
+  game.setJoystick(0,0);
+}
+
+canvas.addEventListener('pointerdown',e=>{
+  if(e.pointerType!=='touch') return;
+  touchPointer=e.pointerId;
+  touchStart={x:e.clientX,y:e.clientY};
+  touchActive=false;
+  canvas.setPointerCapture?.(e.pointerId);
+  touchTimer=setTimeout(()=>{
+    touchActive=true;
+    const v=touchVector(e);
+    if(v.x===0 && v.y===0){
+      const r=canvas.getBoundingClientRect();
+      const dx=e.clientX-(r.left+r.width/2);
+      const dy=e.clientY-(r.top+r.height/2);
+      if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>35) game.setJoystick(Math.sign(dx),0);
+      else if(Math.abs(dy)>35) game.setJoystick(0,Math.sign(dy));
+      else game.setJoystick(0,Math.sign(dy));
+    }else game.setJoystick(v.x,v.y);
+  },140);
+},{passive:true});
+
+canvas.addEventListener('pointermove',e=>{
+  if(e.pointerType!=='touch'||e.pointerId!==touchPointer||!touchActive) return;
+  const v=touchVector(e);
+  game.setJoystick(v.x,v.y);
+},{passive:true});
+canvas.addEventListener('pointerup',e=>{if(e.pointerId===touchPointer) endTouch();},{passive:true});
+canvas.addEventListener('pointercancel',e=>{if(e.pointerId===touchPointer) endTouch();},{passive:true});
 
 // PWA install prompt
 let deferredInstall=null;

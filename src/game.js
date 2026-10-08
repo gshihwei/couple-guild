@@ -145,10 +145,35 @@ export class TownGame {
     }
   }
 
-  decideCat(){const choices=[this.state.player,this.state.partner,...Object.values(this.state.remotePlayers||{})].filter(Boolean);for(const cat of Object.values(this.state.cats)){if(cat.animationUntil&&this.time<cat.animationUntil)continue;const personality=getPersonality(cat),r=Math.random();if(cat.energy<18){cat.state='sleep';cat.target=null;setCatAnimation(cat,'sleep',this.time);continue;}if(cat.hunger>75&&Math.random()<personality.hunger){cat.state='hungry';cat.target=choices[Math.floor(Math.random()*choices.length)];setCatAnimation(cat,'walk',this.time);continue;}if(r<personality.approach){cat.target=choices[Math.floor(Math.random()*choices.length)];cat.state='follow';setCatAnimation(cat,'walk',this.time);}else if(r<personality.approach+personality.wander){cat.target=null;cat.state='wander';setCatAnimation(cat,'walk',this.time);}else{cat.target=null;cat.state='idle';setCatAnimation(cat,'idle',this.time);}}}
-  updateCat(cat,dt){if(cat.animationUntil&&this.time<cat.animationUntil){if(['pet','eat','play','bite'].includes(cat.animation))return;}else if(cat.animationUntil){cat.animationUntil=0;cat.actionText='';if(cat.state==='idle')setCatAnimation(cat,'idle',this.time);}
-    const speed=cat.state==='sleep'?0:cat.state==='follow'||cat.state==='hungry'?58:34;if(cat.state==='follow'||cat.state==='hungry'){const t=cat.target;if(t){const dx=t.x-cat.x,dy=t.y-cat.y,d=Math.hypot(dx,dy);if(d>58){cat.facing=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):dy<0?'up':'down';cat.x+=dx/d*speed*dt;cat.y+=dy/d*speed*dt;}else if(Math.random()<.0025){this.cb.notify(cat.state==='hungry'?`${cat.name}：喵～ 想吃飯了。`:`${cat.name}跑到你身邊撒嬌。`);addPetEvent(this.state,`${cat.name}跑去找人撒嬌。`);setCatAnimation(cat,'pet',this.time);}}}else if(cat.state==='wander'){setCatAnimation(cat,'walk',this.time);const dx=Math.cos(this.time/1700+cat.id.length)*speed*.35,dy=Math.sin(this.time/2100+cat.id.length*2)*speed*.35;cat.facing=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):dy<0?'up':'down';cat.x+=dx*dt;cat.y+=dy*dt;}if(cat.state==='sleep')setCatAnimation(cat,'sleep',this.time);
-    cat.x=clamp(cat.x,100,WORLD_W-100);cat.y=clamp(cat.y,190,WORLD_H-150);cat.hunger=clamp(cat.hunger+dt*.25,0,100);cat.energy=clamp(cat.energy+(cat.state==='sleep'?dt*2:-dt*.15),10,100);}
+  decideCat(){
+    const choices=[this.state.player,this.state.partner,...Object.values(this.state.remotePlayers||{})].filter(Boolean);
+    for(const cat of Object.values(this.state.cats)){
+      if(cat.animationUntil&&this.time<cat.animationUntil)continue;
+      const personality=getPersonality(cat),r=Math.random();
+      if(cat.energy<18){cat.state='sleep';cat.target=null;cat.wanderTarget=null;setCatAnimation(cat,'sleep',this.time);continue;}
+      if(cat.hunger>75&&Math.random()<personality.hunger){cat.state='hungry';cat.target=choices[Math.floor(Math.random()*choices.length)];cat.wanderTarget=null;setCatAnimation(cat,'walk',this.time);continue;}
+      if(r<personality.approach){cat.target=choices[Math.floor(Math.random()*choices.length)];cat.wanderTarget=null;cat.state='follow';setCatAnimation(cat,'walk',this.time);}
+      else if(r<personality.approach+personality.wander){cat.target=null;cat.wanderTarget={x:260+Math.random()*760,y:250+Math.random()*360};cat.state='wander';setCatAnimation(cat,'walk',this.time);}
+      else{cat.target=null;cat.wanderTarget=null;cat.state='idle';setCatAnimation(cat,'idle',this.time);}
+    }
+  }
+  updateCat(cat,dt){
+    if(cat.animationUntil&&this.time<cat.animationUntil){if(['pet','eat','play','bite'].includes(cat.animation))return;}
+    else if(cat.animationUntil){cat.animationUntil=0;cat.actionText='';if(cat.state==='idle')setCatAnimation(cat,'idle',this.time);}
+    const speed=cat.state==='sleep'?0:cat.state==='follow'||cat.state==='hungry'?58:34;
+    if(cat.state==='follow'||cat.state==='hungry'){
+      const t=cat.target;
+      if(t){const dx=t.x-cat.x,dy=t.y-cat.y,d=Math.hypot(dx,dy);if(d>58){cat.facing=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):dy<0?'up':'down';cat.x+=dx/d*speed*dt;cat.y+=dy/d*speed*dt;}else if(Math.random()<.0025){this.cb.notify(cat.state==='hungry'?`${cat.name}：喵～ 想吃飯了。`:`${cat.name}跑到你身邊撒嬌。`);addPetEvent(this.state,`${cat.name}跑去找人撒嬌。`);setCatAnimation(cat,'pet',this.time);}}
+    }else if(cat.state==='wander'){
+      setCatAnimation(cat,'walk',this.time);
+      const t=cat.wanderTarget||{x:260+Math.random()*760,y:250+Math.random()*360};cat.wanderTarget=t;
+      const dx=t.x-cat.x,dy=t.y-cat.y,d=Math.hypot(dx,dy)||1;
+      if(d<14) cat.wanderTarget={x:260+Math.random()*760,y:250+Math.random()*360};
+      else{cat.facing=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):dy<0?'up':'down';cat.x+=dx/d*speed*dt;cat.y+=dy/d*speed*dt;}
+    }
+    if(cat.state==='sleep')setCatAnimation(cat,'sleep',this.time);
+    cat.x=clamp(cat.x,140,1140);cat.y=clamp(cat.y,220,610);cat.hunger=clamp(cat.hunger+dt*.25,0,100);cat.energy=clamp(cat.energy+(cat.state==='sleep'?dt*2:-dt*.15),10,100);
+  }
 
   interactPet(id,action){const cat=this.state.cats[id];if(!cat)return;if(!this.nearPlayer(cat)){this.cb.notify(`${cat.name}跑太遠了，靠近一點再互動。`);return;}if(action==='feed'){if(this.state.food<=0){this.cb.notify('貓罐頭吃完啦，先去商店補貨。');return;}this.state.food--;cat.hunger=clamp(cat.hunger-40,0,100);cat.energy=clamp(cat.energy+8,0,100);cat.state='idle';setCatAnimation(cat,'eat',this.time);addPetEvent(this.state,`${cat.name}吃飽了，開始舔毛。`);addJournal(this.state,'🍖',`${cat.name}吃飯`,`你餵了${cat.name}一份罐頭。`);this.cb.notify(`${cat.name}：呼嚕呼嚕…… 🍖`);this.addFloater(cat.x,cat.y-55,'🍖 好吃！');}if(action==='play'){cat.energy=clamp(cat.energy-10,0,100);cat.hunger=clamp(cat.hunger+8,0,100);cat.state='wander';setCatAnimation(cat,'play',this.time);if(Math.random()<.1){addPetEvent(this.state,`${cat.name}玩到一半突然不玩了。`);this.cb.notify(`${cat.name}突然走掉了 XD`);}else{addPetEvent(this.state,`${cat.name}今天玩得很開心。`);addJournal(this.state,'🎾',`${cat.name}玩耍`,`陪${cat.name}玩了一下。`);this.cb.notify(`${cat.name}開心地追著玩具跑！`);this.addFloater(cat.x,cat.y-55,'🎾 好好玩！');}}if(action==='pet'){const bite=Math.random()<getPersonality(cat).bite;if(bite){cat.mood='今天不想被摸';cat.state='idle';setCatAnimation(cat,'bite',this.time);addPetEvent(this.state,`🦷 ${cat.name}突然咬了一口 XD`);addJournal(this.state,'🦷',`${cat.name}咬人`,`剛剛明明還在呼嚕，結果突然咬了一口。`);this.cb.notify(`🦷 ${cat.name}：「喀。」突然咬了一口 XD`);this.addFloater(cat.x,cat.y-55,'🦷 喀！');}else{cat.mood='正在呼嚕';cat.state='idle';setCatAnimation(cat,'pet',this.time);addPetEvent(this.state,`${cat.name}被摸得很開心。`);this.cb.notify(`${cat.name}：呼嚕呼嚕 ❤️`);this.addFloater(cat.x,cat.y-55,'❤️ 呼嚕');}}saveState(this.state);this.cb.refresh();}
 
@@ -169,29 +194,89 @@ export class TownGame {
   }
 
   drawV050Actors(c){
-    const drawSprite=(img,x,y,scale=1,flip=false,bob=0)=>{
+    const drawSprite=(img,x,y,scale=1,flip=false,bob=0,breath=1)=>{
       if(!img?.complete||!img.naturalWidth)return;
-      const w=img.naturalWidth*V050_SX*scale, h=img.naturalHeight*V050_SY*scale;
-      c.save(); c.translate(x,y+bob); c.scale(flip?-1:1,1); c.globalAlpha=.98; c.drawImage(img,-w/2,-h,w,h); c.restore();
+      const w=img.naturalWidth*V050_SX*scale*breath, h=img.naturalHeight*V050_SY*scale;
+      c.save(); c.translate(x,y+bob); c.scale(flip?-1:1,1); c.globalAlpha=.99;
+      c.drawImage(img,-w/2,-h,w,h); c.restore();
     };
-    const actorVisual=(id,actor)=>{
-      const prev=this.actorVisuals.get(id)||{x:actor.x,y:actor.y,frame:0,dir:'down'};
-      const dx=actor.x-prev.x,dy=actor.y-prev.y,moved=Math.hypot(dx,dy)>.2;
-      if(moved){prev.frame+=.16;if(Math.abs(dx)>Math.abs(dy))prev.dir=dx<0?'left':'right';else prev.dir=dy<0?'up':'down';}else prev.frame*=.86;
-      prev.x=actor.x;prev.y=actor.y;this.actorVisuals.set(id,prev);return {moved,prev};
+    const actorVisual=(id,actor,local=false)=>{
+      const prev=this.actorVisuals.get(id)||{x:actor.x,y:actor.y,renderX:actor.x,renderY:actor.y,frame:0,dir:'down',lastMove:0};
+      const dx=actor.x-prev.x,dy=actor.y-prev.y;
+      const moved=local ? (this.keys.size>0||Math.hypot(this.joy.x,this.joy.y)>.1) : Math.hypot(dx,dy)>.2;
+      if(moved){
+        prev.frame+=.18;
+        prev.lastMove=this.time;
+        if(Math.abs(dx)>Math.abs(dy))prev.dir=dx<0?'left':'right';
+        else if(Math.abs(dy)>.1)prev.dir=dy<0?'up':'down';
+      }else prev.frame*=.84;
+      const follow=.28;
+      prev.renderX=local?actor.x:prev.renderX+(actor.x-prev.renderX)*follow;
+      prev.renderY=local?actor.y:prev.renderY+(actor.y-prev.renderY)*follow;
+      prev.x=actor.x; prev.y=actor.y; this.actorVisuals.set(id,prev);
+      return {moved,prev};
     };
-    const p=this.state.player; const pv=actorVisual('player',p);
-    drawSprite(this.v050Sprites.player,p.x,p.y,1,pv.prev.dir==='left',pv.moved?Math.sin(pv.prev.frame*2)*1.4:0);
-    const q=this.state.partner; const qv=actorVisual('partner',q);
-    drawSprite(this.v050Sprites.partner,q.x,q.y,.98,qv.prev.dir==='left',qv.moved?Math.sin(qv.prev.frame*2)*1.2:0);
-    for(const rp of Object.values(this.state.remotePlayers||{})){if(!rp?.remote)continue;const rv=actorVisual(rp.user_id||rp.name||'remote',rp);drawSprite(this.v050Sprites.partner,rp.x,rp.y,.98,rv.prev.dir==='left',rv.moved?Math.sin(rv.prev.frame*2)*1.2:0);}
+    const actors=[];
+    const p=this.state.player;
+    const pv=actorVisual('player',p,true);
+    actors.push({kind:'player',id:'player',actor:p,visual:pv,img:this.v050Sprites.player,scale:1,name:p.name||document.getElementById('playerName')?.textContent||'我'});
+    const q=this.state.partner;
+    if(q){const qv=actorVisual('partner',q,false);actors.push({kind:'partner',id:'partner',actor:q,visual:qv,img:this.v050Sprites.partner,scale:.98,name:q.name||'另一半'});}
+    for(const rp of Object.values(this.state.remotePlayers||{})){
+      if(!rp?.remote)continue;
+      const id=rp.user_id||rp.name||'remote';
+      const rv=actorVisual(id,rp,false);
+      actors.push({kind:'remote',id,actor:rp,visual:rv,img:this.v050Sprites.partner,scale:.98,name:rp.name||rp.display_name||'隊友'});
+    }
     for(const cat of Object.values(this.state.cats||{})){
-      const cv=actorVisual(cat.id,cat); const img=cat.id==='fly'?this.v050Sprites.cat1:this.v050Sprites.cat2;
-      const bob=cat.animation==='play'?Math.abs(Math.sin(this.time/90))*4:cat.animation==='sleep'?0:Math.sin(this.time/260+(cat.id==='hu'?1:0))*1.2;
-      drawSprite(img,cat.x,cat.y,.92,cat.facing==='left',bob);
+      const cv=actorVisual(cat.id,cat,false);
+      const img=cat.id==='fly'?this.v050Sprites.cat1:this.v050Sprites.cat2;
+      actors.push({kind:'cat',id:cat.id,actor:cat,visual:cv,img,scale:.165,name:cat.name});
+    }
+    actors.sort((a,b)=>(a.actor.y||0)-(b.actor.y||0));
+    for(const a of actors){
+      const {actor,visual}=a;
+      const dir=visual.prev.dir||'down';
+      const walking=visual.moved && a.kind!=='cat';
+      const step=walking?Math.sin(visual.prev.frame*2.4):0;
+      const bob=a.kind==='cat'
+        ? (actor.animation==='play'?Math.abs(Math.sin(this.time/90))*4:actor.animation==='sleep'?0:Math.sin(this.time/260+(a.id==='hu'?1:0))*1.2)
+        : (walking?Math.abs(Math.sin(visual.prev.frame*2.4))*1.7:Math.sin(this.time/520+a.id.length)*.55);
+      const breath=a.kind==='cat'?1:(walking?1:1+Math.sin(this.time/850+a.id.length)*.012);
+      const x=visual.prev.renderX,y=visual.prev.renderY;
+
+      // Grounding shadow: always below the feet/paws.
+      c.save();
+      c.fillStyle='rgba(31,43,37,.22)';
+      c.beginPath();
+      c.ellipse(x,y+5,a.kind==='cat'?18:20,a.kind==='cat'?6:7,0,0,Math.PI*2);
+      c.fill();
+      c.restore();
+
+      drawSprite(a.img,x,y,a.scale,dir==='left',bob+step*.35,breath);
+
+      // Unified RPG nameplate: every live actor uses the same label style below the feet/paws.
+      c.save();
+      c.textAlign='center';
+      c.font='900 10px ui-rounded,system-ui';
+      const label=String(a.name||'').slice(0,10);
+      const width=Math.max(48,c.measureText(label).width+20);
+      const top=y+10;
+      c.fillStyle='rgba(55,51,43,.94)';
+      c.beginPath();
+      c.roundRect(x-width/2,top,width,22,11);
+      c.fill();
+      c.fillStyle='#fff8e9';
+      c.fillText(label,x,top+15);
+      if(a.kind==='player'||a.kind==='partner'||a.kind==='remote'){
+        c.fillStyle='#4fc78b';
+        c.beginPath();
+        c.arc(x+width/2-8,top+11,3,0,Math.PI*2);
+        c.fill();
+      }
+      c.restore();
     }
   }
-
   drawV050Interaction(c){
     const t=this.interactionTarget;if(!t)return;
     const x=t.x,y=t.y-62,pulse=Math.sin(this.time/220)*2;
